@@ -170,6 +170,7 @@ td.v{font-variant-numeric:tabular-nums;white-space:nowrap}
         <label><input type="checkbox" id="tgGuides" checked> Linhas de referência</label>
         <label><input type="checkbox" id="tgPts" checked> Pontos anatômicos</label>
         <label><input type="checkbox" id="tgLabels"> Nomes</label>
+        <label><input type="checkbox" id="tgSnap" checked> Ímã de borda (perfil)</label>
       </div>
     </div>
     <div class="card">
@@ -339,7 +340,7 @@ function loadFile(f){
 // =====================================================================
 //  MOTOR DE DETECÇÃO (MediaPipe Face Landmarker, arquivos locais)
 // =====================================================================
-let ENGINE=null, ENGINE_ERR=null;
+let ENGINE=null, ENGINE_ERR=null, ENGINE_ALT=null, ALT=null, MOD=null, FS=null, SEG=null, SEG_ERR=null, MOBILE=false;
 async function getEngine(){
   if(ENGINE) return ENGINE;
   if(ENGINE_ERR) throw ENGINE_ERR;
@@ -352,40 +353,87 @@ async function getEngine(){
     const bin=atob(window.__HOF_MODEL_B64); const buf=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) buf[i]=bin.charCodeAt(i); window.__HOF_MODEL_B64=null;
     const opts=d=>({baseOptions:{modelAssetBuffer:buf,delegate:d},runningMode:'IMAGE',numFaces:1,
       minFaceDetectionConfidence:0.3,minFacePresenceConfidence:0.3,outputFacialTransformationMatrixes:true});
-    let lm; try{ lm=await mod.FaceLandmarker.createFromOptions(fs,opts('GPU')); }catch(e){ lm=await mod.FaceLandmarker.createFromOptions(fs,opts('CPU')); }
-    ENGINE=lm; return lm;
+    const mobile=/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1); MOD=mod; FS=fs; MOBILE=mobile;
+    const first=mobile?'CPU':'GPU', second=mobile?'GPU':'CPU';
+    let lm; try{ lm=await mod.FaceLandmarker.createFromOptions(fs,opts(first)); }catch(e){ lm=await mod.FaceLandmarker.createFromOptions(fs,opts(second)); }
+    ENGINE=lm; ENGINE_ALT=()=>ALT||(ALT=mod.FaceLandmarker.createFromOptions(fs,opts(second)).catch(()=>null)); return lm;
   }catch(e){ ENGINE_ERR=e; throw e; }
 }
-function runMesh(slot){
-  const res=ENGINE.detect(slot.work);
-  if(!res.faceLandmarks||!res.faceLandmarks.length) return null;
+// segmentação de pessoa (cabelo, pele do rosto, corpo, roupa, fundo) para separar o perfil de fundos poluídos
+async function getSegmenter(){
+  if(SEG) return SEG; if(SEG_ERR) throw SEG_ERR;
+  try{
+    await getEngine();
+    const base=new URL('./', document.baseURI).href;
+    for(const part of ['a','b']){ const i=part==='a'?0:1; if(window.__HOF_SEG&&window.__HOF_SEG[i]) continue;
+      await new Promise((ok,err)=>{ const sc=document.createElement('script'); sc.src=base+'seg_model_'+part+'.js'; sc.onload=ok; sc.onerror=()=>err(new Error('segmentação não carregou')); document.head.appendChild(sc); }); }
+    const b64=window.__HOF_SEG[0]+window.__HOF_SEG[1]; window.__HOF_SEG=null;
+    const bin=atob(b64); const buf=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) buf[i]=bin.charCodeAt(i);
+    const o=d=>({baseOptions:{modelAssetBuffer:buf,delegate:d},runningMode:'IMAGE',outputCategoryMask:false,outputConfidenceMasks:true});
+    try{ SEG=await MOD.ImageSegmenter.createFromOptions(FS,o(MOBILE?'CPU':'GPU')); }catch(e){ SEG=await MOD.ImageSegmenter.createFromOptions(FS,o(MOBILE?'GPU':'CPU')); }
+    return SEG;
+  }catch(e){ SEG_ERR=e; throw e; }
+}
+function runSeg(slot){
+  let out=null;
+  SEG.segment(slot.work,res=>{ const m=res.confidenceMasks&&res.confidenceMasks[0]; if(m) out={bg:new Float32Array(m.getAsFloat32Array()), w:m.width, h:m.height}; });
+  return out;
+}
+async function runMesh(slot){
+  const small=(()=>{ const k=Math.min(1,960/Math.max(slot.W,slot.H)); if(k>=1) return null; const c=document.createElement('canvas'); c.width=Math.round(slot.W*k); c.height=Math.round(slot.H*k); c.getContext('2d').drawImage(slot.work,0,0,c.width,c.height); return c; })();
+  const tryOn=(eng,img)=>{ try{ const r=eng.detect(img); return r&&r.faceLandmarks&&r.faceLandmarks.length?r:null; }catch(e){ console.warn(e); return null; } };
+  let res=tryOn(ENGINE,slot.work)||(small&&tryOn(ENGINE,small));
+  if(!res && ENGINE_ALT){ const alt=await ENGINE_ALT(); if(alt) res=tryOn(alt,slot.work)||(small&&tryOn(alt,small)); }
+  if(!res) return null;
   const L=res.faceLandmarks[0].map(p=>({x:p.x*slot.W,y:p.y*slot.H,z:p.z*slot.W}));
+  // rotação estimada pela geometria (mais confiável que a matriz em perfis): largura de cada bochecha vista a partir da ponta do nariz
+  const cR=Math.abs(L[1].x-L[234].x), cL=Math.abs(L[454].x-L[1].x);
+  const geoYaw=deg(Math.asin(Math.min(1,Math.abs(cR-cL)/(cR+cL))))*1.15*(cR<cL?-1:1);
   let pose=null; const m=res.facialTransformationMatrixes&&res.facialTransformationMatrixes[0]&&res.facialTransformationMatrixes[0].data;
   if(m){ pose={yaw:deg(Math.atan2(m[8],m[10])), pitch:deg(Math.asin(Math.max(-1,Math.min(1,-m[9])))), roll:deg(Math.atan2(m[1],m[5]))}; }
+  pose=pose||{yaw:0,pitch:0,roll:0}; if(Math.abs(geoYaw)>Math.abs(pose.yaw)) pose.yaw=geoYaw;
   return {L,pose};
 }
 
 async function autoDetect(slot, forced){
-  slot.flags=[]; slot.method=''; slot.irisPx=null; slot.contour=null; slot.facing=null; slot.pose=null;
+  slot.flags=[]; slot.askView=false; slot.method=''; slot.noFace=false; slot.silScore=0; slot.irisPx=null; slot.contour=null; slot.facing=null; slot.pose=null;
   let mesh=null;
-  try{ busy(true,'Carregando o motor de detecção facial…'); await getEngine(); busy(true,'Detectando o rosto e 478 pontos…'); await new Promise(r=>setTimeout(r,30)); const r=runMesh(slot); if(r){ mesh=r.L; slot.pose=r.pose; } }
+  try{ busy(true,'Carregando o motor de detecção facial…'); await getEngine(); busy(true,'Detectando o rosto e 478 pontos…'); await new Promise(r=>setTimeout(r,30)); const r=await runMesh(slot); if(r){ mesh=r.L; slot.pose=r.pose; } else slot.noFace=true; }
   catch(e){ slot.flags.push('Motor de detecção indisponível neste navegador ('+(e.message||e)+').'); }
   slot.mesh=mesh;
   let view=forced!=='auto'?forced:null;
   if(!view){
-    if(mesh && slot.pose) view=Math.abs(slot.pose.yaw)>=42?'profile':'front';
+    if(mesh && slot.pose) view=Math.abs(slot.pose.yaw)>=48?'profile':'front';
     else if(mesh) view='front';
-    else view='profile'; // rosto não encontrado pelo modelo: perfis a 90° costumam falhar → tentar silhueta
+    else view='profile?'; // rosto não encontrado: só vira perfil se a silhueta for convincente
   }
-  slot.view=view; slot.pts={};
+  slot.view=view==='profile?'?'profile':view; slot.pts={}; slot.segBg=null;
+  if(view!=='front' && ENGINE){ try{ busy(true,'Carregando a segmentação de perfil (só na 1ª vez)…'); await getSegmenter(); busy(true,'Separando o rosto do fundo…'); await new Promise(r=>setTimeout(r,30)); const sg=runSeg(slot); if(sg) slot.segBg=sg; }catch(e){ console.warn(e); } }
   busy(true, view==='profile'?'Extraindo a silhueta do perfil…':'Refinando pontos anatômicos…');
   await new Promise(r=>setTimeout(r,30));
   let ok=false;
   try{
     if(view==='front'){ if(mesh){ mapFront(slot); ok=true; slot.method='Malha facial 3D (478 pontos) + refinamento por imagem'; } }
-    else { ok=detectProfile(slot); }
+    else if(view==='profile?'){
+      ok=detectProfile(slot);
+      if(!ok||!silCredible(slot)){ ok=false; resetManual(slot,'front'); slot.askView=true;
+        slot.flags=slot.flags.filter(f=>/indisponível/.test(f)); }
+      else { view='profile'; slot.view='profile'; }
+    }
+    else {
+      ok=detectProfile(slot);
+      const meshPrn = mesh ? {x:mesh[1].x,y:mesh[1].y} : null;
+      const far = ok && !slot.segBg && meshPrn && slot.pts.prn && dist(slot.pts.prn,meshPrn) > 0.12*Math.abs(mesh[152].y-mesh[168].y);
+      if(!ok || far || (!mesh && !silCredible(slot))){
+        const keep=slot.flags.filter(f=>/indisponível/.test(f));
+        resetManual(slot,'profile'); slot.flags=keep;
+        if(mesh){ meshOnlyProfile(slot); for(const k of ['g','n','prn','sn','ls','st','li','sm','pg']) if(slot.pts[k]) slot.pts[k]=snapH(slot,slot.pts[k],0.06); if(slot.pts.me) slot.pts.me=snapToEdge(slot,slot.pts.me,0.03); ok=false; }
+        slot.flags.push('Fundo com muitos elementos (ex.: sofá, móveis): o contorno automático não é confiável nesta foto. '+(mesh?'Os pontos foram estimados pela malha e ajustados à borda: confira e marque ponto cervical e pescoço.':'Toque perto de cada ponto: o ímã gruda na borda do rosto.')+' Para detecção 100% automática, fotografe o perfil contra uma parede lisa.');
+        slot.method = mesh ? 'Malha facial + ímã de borda' : '';
+      }
+    }
   }catch(e){ console.error(e); slot.flags.push('Falha no refinamento: '+e.message); }
-  if(!ok && forced==='auto' && view==='profile' && !mesh){
+  if(false){
     // nem malha nem silhueta: provavelmente foto frontal sem detecção → marcação manual frontal
     slot.view='front'; slot.pts={};
   }
@@ -474,16 +522,17 @@ function detectProfile(slot){
   if(!sil){ slot.flags.push('Não consegui separar o rosto do fundo: use fundo liso e contrastante, ou marque os pontos.'); return meshOnlyProfile(slot); }
   const {C, facing}=sil; slot.facing=facing;
   const a=p=>facing==='R'?p.x:-p.x; // coordenada anterior
-  const L=slot.mesh;
+  const L=slot.segBg?null:slot.mesh;
   const y=i=>L[i].y;
   // --- pronasal: ponto mais anterior na janela do nariz
   const top=Math.min(...C.map(p=>p.y)), bot=Math.max(...C.map(p=>p.y));
-  let win = L ? [y(195)-0.02*slot.H, y(2)+0.02*slot.H] : [top+0.12*(bot-top), top+0.62*(bot-top)];
+  const M_=slot.mesh, Fm=M_?Math.abs(M_[152].y-M_[168].y):0;
+  let win = L ? [y(195)-0.02*slot.H, y(2)+0.02*slot.H] : (M_&&Fm>20 ? [M_[1].y-0.3*Fm, M_[1].y+0.25*Fm] : [top+0.12*(bot-top), top+0.62*(bot-top)]);
   let iPrn=-1; C.forEach((p,i)=>{ if(p.y>=win[0]&&p.y<=win[1]&&(iPrn<0||a(p)>a(C[iPrn]))) iPrn=i; });
   if(iPrn<0) return meshOnlyProfile(slot);
   const prn=C[iPrn];
   // altura de referência F (násio→mento)
-  let F = L ? Math.abs(y(152)-y(168)) : 0.78*(prn.y-top);
+  let F = L ? Math.abs(y(152)-y(168)) : (Fm>20 ? Fm*1.05 : 0.78*(prn.y-top));
   if(!(F>20)) F=0.78*(prn.y-top);
   // segmentos superior e inferior percorrendo o contorno a partir do pronasal
   const N=C.length, walk=(dir,stop)=>{ const out=[]; for(let k=0;k<N*0.7;k++){ const p=C[(iPrn+dir*k+N*4)%N]; out.push(p); if(stop(p)) break; } return out; };
@@ -502,11 +551,16 @@ function detectProfile(slot){
   const lower=()=>{
     P.sn = pick(down, prn.y+0.01*F, Math.max(prior('p0'),prn.y+0.1*F), 'min');
     if(!P.sn) return false;
-    P.ls = pick(down, P.sn.y, prior('p13')+0.02*F, 'max');
-    P.st = pick(down, P.ls.y, prior('p17'), 'min');
-    P.li = pick(down, P.st.y, prior('p200'), 'max');
-    P.sm = pick(down, P.li.y, prior('p199')+0.02*F, 'min');
-    P.pg = pick(down, P.sm.y, prior('p152')+0.03*F, 'max');
+    const e=0.015*F;
+    P.ls = pick(down, P.sn.y+e, Math.max(prior('p13')+0.02*F, P.sn.y+0.12*F), 'max');
+    if(!P.ls) return false;
+    P.st = pick(down, P.ls.y+e, Math.max(prior('p17'), P.ls.y+0.12*F), 'min');
+    if(!P.st) return false;
+    P.li = pick(down, P.st.y+e, Math.max(prior('p200'), P.st.y+0.14*F), 'max');
+    if(!P.li) return false;
+    P.sm = pick(down, P.li.y+e, Math.max(prior('p199')+0.02*F, P.li.y+0.16*F), 'min');
+    if(!P.sm) return false;
+    P.pg = pick(down, P.sm.y+e, Math.max(prior('p152')+0.03*F, P.sm.y+0.2*F), 'max');
     return P.ls&&P.st&&P.li&&P.sm&&P.pg;
   };
   if(!lower()) return meshOnlyProfile(slot);
@@ -541,14 +595,46 @@ function detectProfile(slot){
     const iris = vis===0 ? dist(L[470],L[472]) : dist(L[475],L[477]);
     if(iris>4) slot.irisPx=iris;
   }
+  // sanidade do contorno superior: de pronasal até a glabela ele deve sempre subir
+  { const last=Math.max(up.indexOf(P.g),up.indexOf(P.n)); let down_=0, prevY=prn.y; for(let i=0;i<=last;i++){ const p=up[i]; if(p.y>prevY) down_+=p.y-prevY; prevY=Math.min(prevY,p.y); }
+    if(down_>0.06*F && slot.segBg && !slot._retry){ slot._retry=true; slot.segBg=null; const r=detectProfile(slot); slot._retry=false; return r; } }
   // sanidade: ordem vertical
   const ord=['n','prn','sn','ls','st','li','sm','pg'];
   for(let i=1;i<ord.length;i++) if(!(P[ord[i]].y>P[ord[i-1]].y-1)){ slot.flags.push('Ordem anatômica inconsistente na detecção: confira os pontos do terço inferior.'); break; }
+  slot.silScore=(a(P.prn)-a(P.sn))/F;
   if(a(P.prn)-a(P.sn) < 0.05*F) slot.flags.push('Projeção nasal muito baixa detectada: verifique se a silhueta está correta.');
   for(const k in P) if(P[k]) P[k]={x:P[k].x,y:P[k].y};
   slot.pts=P; slot.contour={up, down, facing};
-  slot.method = L ? 'Silhueta do perfil guiada pela malha facial 3D' : 'Silhueta do perfil (análise de contorno)';
+  slot.method = slot.segBg ? 'Segmentação de pessoa + contorno do perfil' : (L ? 'Silhueta do perfil guiada pela malha facial 3D' : 'Silhueta do perfil (análise de contorno)');
   return true;
+}
+function silCredible(slot){ return slot.bgVar!=null && (slot.segBg||slot.bgVar<30) && slot.silScore>0.07 && slot.silScore<0.4 && !slot.flags.some(f=>/inconsistente|Projeção nasal|separar o rosto/.test(f)); }
+function resetManual(slot,view){ slot.view=view; slot.pts={}; slot.contour=null; slot.facing=null; slot.silScore=0; slot.method=''; if(view==='front') slot.irisPx=null; }
+// ímã: procura, perto do toque, o ponto de borda mais forte (gradiente de cor), favorecendo o mais próximo
+function snapToEdge(slot,p,frac){
+  const r=Math.max(6,Math.round((frac||0.025)*Math.max(slot.W,slot.H)));
+  const x0=Math.max(1,Math.round(p.x-r-1)), y0=Math.max(1,Math.round(p.y-r-1)), x1=Math.min(slot.W-2,Math.round(p.x+r+1)), y1=Math.min(slot.H-2,Math.round(p.y+r+1));
+  const w=x1-x0+1, h=y1-y0+1; if(w<5||h<5) return p;
+  const D=slot.work.getContext('2d',{willReadFrequently:true}).getImageData(x0,y0,w,h).data;
+  const lum=(x,y)=>{ const i=(y*w+x)*4; return [D[i],D[i+1],D[i+2]]; };
+  let best=null,bs=0,gmax=0;
+  for(let y=1;y<h-1;y++) for(let x=1;x<w-1;x++){
+    let g=0; for(let c=0;c<3;c++){ const gx=lum(x+1,y-1)[c]+2*lum(x+1,y)[c]+lum(x+1,y+1)[c]-lum(x-1,y-1)[c]-2*lum(x-1,y)[c]-lum(x-1,y+1)[c];
+      const gy=lum(x-1,y+1)[c]+2*lum(x,y+1)[c]+lum(x+1,y+1)[c]-lum(x-1,y-1)[c]-2*lum(x,y-1)[c]-lum(x+1,y-1)[c]; g=Math.max(g,Math.hypot(gx,gy)); }
+    const d=Math.hypot(x0+x-p.x,y0+y-p.y); if(d>r) continue; gmax=Math.max(gmax,g);
+    const sc=g*Math.exp(-(d/r)*(d/r)*1.5); if(sc>bs){bs=sc;best={x:x0+x,y:y0+y};}
+  }
+  return (best && gmax>60) ? best : p;
+}
+function snapH(slot,p,frac){
+  const r=Math.max(8,Math.round((frac||0.05)*slot.W)), y=Math.round(p.y);
+  const x0=Math.max(1,Math.round(p.x-r)), x1=Math.min(slot.W-2,Math.round(p.x+r)); if(y<2||y>slot.H-3||x1-x0<4) return p;
+  const D=slot.work.getContext('2d',{willReadFrequently:true}).getImageData(x0-1,y-2,x1-x0+3,5).data, w=x1-x0+3;
+  const px=(x,yy,c)=>D[((yy)*w+x)*4+c];
+  let best=null,bs=0;
+  for(let x=1;x<w-1;x++){ let g=0; for(let c=0;c<3;c++){ let gx=0; for(let yy=0;yy<5;yy++) gx+=px(x+1,yy,c)-px(x-1,yy,c); g=Math.max(g,Math.abs(gx)); }
+    const d=Math.abs(x0-1+x-p.x); const sc=g*Math.exp(-(d/r)*(d/r)*1.2); if(sc>bs){bs=sc;best=x0-1+x;} }
+  return (best!=null && bs>40) ? {x:best,y:p.y} : p;
 }
 function meshOnlyProfile(slot){
   const L=slot.mesh; if(!L) return false;
@@ -570,13 +656,17 @@ function extractSilhouette(slot){
   const med=j=>{ const v=sm.map(s=>s[j]).sort((p,q)=>p-q); return v[v.length>>1]; };
   const bg=[med(0),med(1),med(2)];
   const bgVar = sm.reduce((t,s)=>t+Math.hypot(s[0]-bg[0],s[1]-bg[1],s[2]-bg[2]),0)/sm.length;
+  let m;
+  if(slot.segBg){ const S_=slot.segBg; m=new Uint8Array(w*h); for(let yy=0;yy<h;yy++){ const sy=Math.min(S_.h-1,Math.floor(yy/h*S_.h)); for(let xx=0;xx<w;xx++){ const sx=Math.min(S_.w-1,Math.floor(xx/w*S_.w)); m[yy*w+xx]=S_.bg[sy*S_.w+sx]<0.5?1:0; } } }
+  else {
   const d=new Float32Array(w*h); const hist=new Uint32Array(256);
   for(let i=0,j=0;i<D.length;i+=4,j++){ const v=Math.min(255,Math.hypot(D[i]-bg[0],(D[i+1]-bg[1])*1.15,D[i+2]-bg[2])); d[j]=v; hist[v|0]++; }
   // limiar de Otsu
   let sum=0,tot=w*h; for(let i=0;i<256;i++) sum+=i*hist[i];
   let sB=0,wB=0,best=0,thr=40; for(let i=0;i<256;i++){ wB+=hist[i]; if(!wB) continue; const wF=tot-wB; if(!wF) break; sB+=i*hist[i]; const mB=sB/wB, mF=(sum-sB)/wF; const v=wB*wF*(mB-mF)*(mB-mF); if(v>best){best=v;thr=i;} }
   thr=Math.max(thr, 22, bgVar*2.2);
-  let m=new Uint8Array(w*h); for(let j=0;j<m.length;j++) m[j]=d[j]>thr?1:0;
+  m=new Uint8Array(w*h); for(let j=0;j<m.length;j++) m[j]=d[j]>thr?1:0;
+  }
   // suavização por maioria 3x3 (2 passes)
   for(let pass=0;pass<2;pass++){ const n=new Uint8Array(w*h); for(let yy=1;yy<h-1;yy++) for(let xx=1;xx<w-1;xx++){ let s=0; for(let oy=-1;oy<=1;oy++) for(let ox=-1;ox<=1;ox++) s+=m[(yy+oy)*w+xx+ox]; n[yy*w+xx]=s>=5?1:0; } m=n; }
   // maior componente conectado
@@ -602,7 +692,9 @@ function extractSilhouette(slot){
   const C=trace(m,w,h); if(!C||C.length<100) return null;
   // suavização leve ao longo do contorno
   const sC=C.map((p,i)=>{ let sx=0,sy=0,n=0; for(let o=-2;o<=2;o++){ const q=C[(i+o+C.length)%C.length]; sx+=q[0]; sy+=q[1]; n++; } return {x:(sx/n+0.5)/k, y:(sy/n+0.5)/k}; });
-  slot.silMask={m,w,h,k};
+  // fração das linhas do rosto em que a silhueta encosta na borda do lado para onde o rosto aponta
+  let touch=0,cnt=0; for(const o of rows){ if(o.l<0) continue; cnt++; if(facing==='R'?o.r>=w-3:o.l<=2) touch++; }
+  slot.silMask={m,w,h,k}; slot.bgVar=slot.segBg?0:bgVar; slot.edgeTouch=cnt?touch/cnt:1;
   return {C:sC, facing};
 }
 function trace(m,w,h){
@@ -725,7 +817,9 @@ cv.addEventListener('pointerdown',e=>{
   const s=A(); if(!s) return; e.preventDefault(); cv.setPointerCapture(e.pointerId);
   const p=evPt(e), defs=DEFS[s.view];
   if(s.cur>=defs.length){ const n=nearest(p); if(n){ S.drag=n; S.loupe=p; render(); } return; }
-  const id=defs[s.cur].id; s.pts[id]=p; S.drag=id; S.loupe=p; advance(); render();
+  const id=defs[s.cur].id; const def=defs[s.cur];
+  const q=(s.view==='profile' && $('tgSnap').checked && !['tr','or','cm'].includes(id)) ? snapToEdge(s,p) : p;
+  s.pts[id]=q; S.drag=id; S.loupe=q; advance(); render();
 });
 cv.addEventListener('pointermove',e=>{ if(!S.drag) return; e.preventDefault(); const s=A(); const p=evPt(e); p.x=Math.max(0,Math.min(s.W,p.x)); p.y=Math.max(0,Math.min(s.H,p.y)); s.pts[S.drag]=p; S.loupe=p; if(s.result) analyzeAll(); else render(); });
 const endDrag=()=>{ if(!S.drag) return; S.drag=null; S.loupe=null; const s=A(); if(complete(s)) analyzeAll(); render(); updateUI(); };
@@ -747,9 +841,12 @@ function updateUI(){
   const meth=s.method?`<span class="chip ok">${s.method}</span>`:`<span class="chip warn">Marcação manual</span>`;
   const sc=s.scale?`<span class="chip info">Escala: ${s.scale.src}</span>`:'';
   $('status').innerHTML=`<b>Vista: ${VIEW_NAME[s.view]}${s.view==='profile'&&s.facing?` (voltado para a ${s.facing==='R'?'direita':'esquerda'})`:''}${s.view==='front'&&s.pose&&Math.abs(s.pose.yaw)>15?' · oblíqua (¾)':''}</b><div class="meta">${meth}${pose}${sc}</div>`+
+    (s.askView?`<div class="find" style="margin-top:8px"><div><b>Não reconheci o rosto automaticamente.</b><small>Esta foto é frontal ou de perfil? Depois é só tocar perto de cada ponto.</small><div class="btns" style="margin-top:8px"><button class="btn small" data-ask="front">Frontal</button><button class="btn small" data-ask="profile">Perfil</button></div></div></div>`:'')+
     (s.flags.length?`<div style="margin-top:8px">${s.flags.map(f=>`<div class="find info" style="margin-bottom:6px"><small style="color:var(--ink)">${f}</small></div>`).join('')}</div>`:'');
   $('btnMirror').classList.toggle('hidden', s.view!=='front');
 }
+$('status').addEventListener('click',e=>{ const v=e.target.dataset&&e.target.dataset.ask; if(!v) return; const s=A();
+  S.slots[s.view]=null; s.askView=false; resetManual(s,v); s.cur=0; S.slots[v]=s; S.active=v; refreshResults(); updateUI(); render(); toast('Toque perto de cada ponto, na ordem indicada'); });
 $('tabs').addEventListener('click',e=>{ const v=e.target.closest('.tab')?.dataset.v; if(!v) return;
   if(!S.slots[v]){ $('pView').value=v; toast(`Envie a foto de ${VIEW_NAME[v].toLowerCase()}`); file.click(); return; }
   S.active=v; const s=A(); cv.width=s.W; cv.height=s.H; updateUI(); render(); });
