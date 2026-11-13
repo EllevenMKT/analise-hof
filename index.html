@@ -7,11 +7,11 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Análise HOF">
+<meta name="apple-mobile-web-app-title" content="FaceCheck">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<title>Análise Facial HOF</title>
+<title>FaceCheck by Angevie</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,500&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -172,13 +172,23 @@ details.anam .body{padding:0 14px 14px;display:grid;gap:12px}
 .alert{border-radius:12px;padding:12px 14px;margin-bottom:10px;border:1px solid}
 .alert.bad{background:var(--bad-soft);border-color:#eec3bf} .alert.warn{background:var(--warn-soft);border-color:#efd9b2} .alert.info{background:#f2f0ee;border-color:var(--line)}
 .alert b{display:block}
+
+/* ===== Marca FaceCheck by Angevie ===== */
+.wm{display:inline-flex;flex-direction:column;align-items:flex-start;line-height:.95;text-align:left}
+.wm-name{font-family:'Cormorant Garamond',Georgia,serif;font-weight:500;letter-spacing:.035em;
+  background:linear-gradient(100deg,#9C7340 0%,#C9A06D 28%,#E7CFA3 46%,#B98A55 66%,#8F6838 100%);-webkit-background-clip:text;background-clip:text;color:transparent;padding-bottom:.04em}
+.wm-by{font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;font-weight:500;font-size:.36em;letter-spacing:.08em;color:var(--ink-soft,#6B564E);margin-top:.12em;padding-left:.1em}
+.spl-name .wm{font-size:clamp(3rem,13vw,4.4rem)}
+.wm-h1 .wm{font-size:clamp(2.6rem,10vw,3.4rem)}
+.wm-sm .wm{font-size:1.55rem}
+.wm-sm .wm-by{font-size:.46em}
 </style>
 </head>
 <body>
 <!-- ===== ENTRADA ===== -->
 <div id="splash">
   <img class="spl-mark" src="logo-mark.png" alt="">
-  <div class="spl-name"><em>Clínica Angevie</em><span class="app-name">Angevie Harmonia</span></div>
+  <div class="spl-name"><span class="wm"><span class="wm-name">FaceCheck</span><span class="wm-by">by Angevie</span></span></div>
   <div class="spl-tag app-tag">Análise facial inteligente para HOF</div>
   <div class="spl-load">
     <div class="spl-bar"><i id="splBar"></i></div>
@@ -200,7 +210,7 @@ details.anam .body{padding:0 14px 14px;display:grid;gap:12px}
     <div class="hero">
       <img class="lock" src="logo-lockup.png" alt="Clínica Angevie · Dra. Aline Simei Sales">
       <span class="badge">Harmonização Orofacial</span>
-      <h1 style="margin-top:12px"><span class="app-name">Angevie Harmonia</span></h1>
+      <h1 style="margin-top:14px" class="wm-h1"><span class="wm"><span class="wm-name">FaceCheck</span><span class="wm-by">by Angevie</span></span></h1>
       <p>Proporções, simetria e perfil analisados automaticamente a partir da foto, com plano de tratamento sugerido.</p>
     </div>
     <div class="home-actions">
@@ -223,7 +233,7 @@ details.anam .body{padding:0 14px 14px;display:grid;gap:12px}
 <!-- ===== AVALIAÇÃO ===== -->
 <div id="appScreen" class="screen hidden">
 <div class="topbar">
-  <div class="brand" id="goHome"><img src="logo-mark.png" alt=""><div><b class="app-name">Angevie Harmonia</b><small>Clínica Angevie</small></div></div>
+  <div class="brand" id="goHome"><img src="logo-mark.png" alt=""><div class="wm-sm"><span class="wm"><span class="wm-name">FaceCheck</span><span class="wm-by">by Angevie</span></span></div></div>
   <div class="btns"><button class="btn small" id="btnHome">Início</button><button class="btn small" id="btnReset">Novo paciente</button></div>
 </div>
 <div class="wrap grow">
@@ -1351,8 +1361,8 @@ $('btnPng').onclick=async()=>{
 // =====================================================================
 //  ENTRADA (splash com carregamento real), TELAS E CADASTRO
 // =====================================================================
-const APP_NAME='Angevie Harmonia', APP_TAG='Análise facial inteligente para HOF';
-document.querySelectorAll('.app-name').forEach(e=>e.textContent=APP_NAME); document.querySelectorAll('.app-tag').forEach(e=>e.textContent=APP_TAG);
+const APP_NAME='FaceCheck by Angevie', APP_TAG='Análise facial inteligente para HOF';
+document.querySelectorAll('.app-tag').forEach(e=>e.textContent=APP_TAG);
 document.title=APP_NAME;
 const BOOT={p:0,from:0,to:0,t0:0,done:false,ok:false,msg:''};
 const STAGES={ui:[0,12,'Preparando a interface'],motor:[12,38,'Carregando o motor de visão computacional'],modelo:[38,62,'Baixando o modelo facial de 478 pontos'],modelo2:[62,84,'Preparando o modelo facial'],calib:[84,100,'Calibrando a detecção']};

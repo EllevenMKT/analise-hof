@@ -1,6 +1,6 @@
 {
-  "name": "Angevie Harmonia",
-  "short_name": "Angevie",
+  "name": "FaceCheck by Angevie",
+  "short_name": "FaceCheck",
   "description": "Análise facial automática para Harmonização Orofacial: proporções, simetria, perfil e plano sugerido.",
   "lang": "pt-BR",
   "start_url": "./",

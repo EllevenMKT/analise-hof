@@ -1,5 +1,5 @@
 // Service worker: guarda o app inteiro no aparelho para funcionar offline.
-const VERSION = 'hof-v4';
+const VERSION = 'hof-v5';
 const APP = ['./','./index.html','./manifest.webmanifest','./icon-192.png','./icon-512.png','./maskable-512.png','./apple-touch-icon.png','./logo-mark.png','./logo-lockup.png',
   './vision_bundle.mjs','./vision_wasm_internal.js','./vision_wasm_internal.wasm','./face_model.js','./seg_model_a.js','./seg_model_b.js'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(VERSION).then(c => c.addAll(APP)).then(() => self.skipWaiting())); });
