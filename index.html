@@ -173,6 +173,29 @@ details.anam .body{padding:0 14px 14px;display:grid;gap:12px}
 .alert.bad{background:var(--bad-soft);border-color:#eec3bf} .alert.warn{background:var(--warn-soft);border-color:#efd9b2} .alert.info{background:#f2f0ee;border-color:var(--line)}
 .alert b{display:block}
 
+/* ===== Atlas muscular ===== */
+.atlas-wrap{max-width:1100px;margin:0 auto;padding:18px 16px 0;display:grid;gap:16px}
+@media(min-width:880px){.atlas-wrap{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start}}
+.atlas-fig{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:10px;order:-1}
+@media(min-width:880px){.atlas-fig{position:sticky;top:76px;order:0}}
+@media(max-width:879px){.atlas-svg{max-height:60vh;margin:0 auto}}
+.atlas-svg{width:100%;height:auto;display:block;max-height:72vh}
+.atlas-svg .msc{cursor:pointer;transition:opacity .2s}
+.atlas-svg .msc:hover{opacity:1!important}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chipbtn{border:1px solid var(--line);background:#fff;border-radius:99px;padding:6px 12px;font:inherit;font-size:.85rem;cursor:pointer;color:var(--muted)}
+.chipbtn.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.mlist{display:grid;gap:6px;grid-template-columns:repeat(auto-fill,minmax(180px,1fr))}
+.mlist button{display:flex;gap:8px;align-items:center;text-align:left;border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 10px;font:inherit;font-size:.86rem;cursor:pointer;color:var(--ink)}
+.mlist button.on{border-color:var(--gold);box-shadow:0 0 0 2px rgba(201,160,109,.25)}
+.mlist i{width:10px;height:10px;border-radius:3px;flex:none;background:#c4544a}
+.mlist i.atencao{background:#fff;border:2px dashed #b4433a}
+.minfo h3{font-size:1.5rem!important}
+.minfo dl{margin:10px 0 0;display:grid;gap:10px}
+.minfo dt{font-size:.74rem;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);font-weight:600}
+.minfo dd{margin:2px 0 0;font-size:.95rem}
+.mchips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.mchips button{border:1px solid #efc9c2;background:#fbefec;color:#96543F;border-radius:99px;padding:3px 10px;font:inherit;font-size:.78rem;cursor:pointer}
 /* ===== Marca FaceCheck by Angevie ===== */
 .wm{display:inline-flex;flex-direction:column;align-items:flex-start;line-height:.95;text-align:left}
 .wm-name{font-family:'Cormorant Garamond',Georgia,serif;font-weight:500;letter-spacing:.035em;
@@ -216,6 +239,7 @@ details.anam .body{padding:0 14px 14px;display:grid;gap:12px}
     <div class="home-actions">
       <button class="bigbtn primary" id="goNew"><span class="ic">✦</span><span><b>Nova avaliação</b><small>Cadastro, anamnese, fotos e análise</small></span></button>
       <button class="bigbtn" id="goResume" style="display:none"><span class="ic">↺</span><span><b>Continuar avaliação</b><small id="resumeName"></small></span></button>
+      <button class="bigbtn" id="goAtlas"><span class="ic">◎</span><span><b>Atlas muscular</b><small>Músculos da face, ação e pontos de atenção</small></span></button>
       <button class="bigbtn" id="goGuide"><span class="ic">📷</span><span><b>Como fotografar</b><small>Frontal e perfil padronizados</small></span></button>
     </div>
     <div class="home-info">
@@ -228,6 +252,31 @@ details.anam .body{padding:0 14px 14px;display:grid;gap:12px}
     </div>
   </div>
   <footer class="foot">Desenvolvido por <b>Elleven Marketing Digital</b></footer>
+</div>
+
+<!-- ===== ATLAS MUSCULAR ===== -->
+<div id="atlasScreen" class="screen hidden">
+<div class="topbar">
+  <div class="brand" data-home="1"><img src="logo-mark.png" alt=""><div class="wm-sm"><span class="wm"><span class="wm-name">FaceCheck</span><span class="wm-by">by Angevie</span></span></div></div>
+  <div class="btns"><button class="btn small" id="atlasBack">Voltar</button></div>
+</div>
+<div class="grow">
+  <div class="atlas-wrap">
+    <div>
+      <span class="badge">Atlas muscular</span>
+      <h1 style="margin:10px 0 4px;font-size:2rem">Músculos da face</h1>
+      <p style="color:var(--muted);margin:0 0 12px">Toque em um músculo no rosto ou na lista para ver a ação, a relevância na HOF e os riscos. Tracejado = zona de atenção para toxina.</p>
+      <div class="chips" id="atlasFilter">
+        <button class="chipbtn on" data-f="todos">Todos</button><button class="chipbtn" data-f="alvo">Alvos de toxina</button>
+        <button class="chipbtn" data-f="atencao">Zonas de atenção</button><button class="chipbtn" data-f="mastigacao">Mastigação</button>
+      </div>
+      <div class="card minfo" id="atlasInfo" style="margin-top:14px"></div>
+      <div class="mlist" id="atlasList" style="margin-top:14px"></div>
+    </div>
+    <div class="atlas-fig" id="atlasFig"></div>
+  </div>
+</div>
+<footer class="foot">Desenvolvido por <b>Elleven Marketing Digital</b></footer>
 </div>
 
 <!-- ===== AVALIAÇÃO ===== -->
@@ -326,6 +375,7 @@ details.anam .body{padding:0 14px 14px;display:grid;gap:12px}
         <label><input type="checkbox" id="tgPts" checked> Pontos anatômicos</label>
         <label><input type="checkbox" id="tgLabels"> Nomes</label>
         <label><input type="checkbox" id="tgSnap" checked> Ímã de borda (perfil)</label>
+        <label id="tgMusWrap"><input type="checkbox" id="tgMus"> Músculos (frontal)</label>
       </div>
     </div>
     <div class="card">
@@ -387,6 +437,181 @@ details.anam .body{padding:0 14px 14px;display:grid;gap:12px}
 </div>
 <div class="toast" id="toast"></div>
 
+<script>
+// =====================================================================
+//  ATLAS MUSCULAR — geometria do rosto modelo (viewBox 400 x 520)
+//  Lado esquerdo da imagem = lado direito do paciente. Músculos pares
+//  são definidos só desse lado e espelhados (x -> 400 - x).
+// =====================================================================
+const MUSCLES = [
+  {id:'frontal', name:'Frontal', pair:true, fib:90, cat:'expressao', tox:'alvo',
+   poly:[[194,58],[160,56],[124,74],[108,104],[106,146],[124,158],[156,147],[182,150],[194,140]],
+   acao:'Eleva as sobrancelhas e enruga a testa (linhas horizontais). É o único elevador da sobrancelha.',
+   hof:'Toxina para linhas frontais. Usar doses baixas e pontos altos (≥ 2 cm acima da sobrancelha), sobretudo se a sobrancelha for baixa.',
+   risco:'Ptose de sobrancelha se tratar baixo demais; sobrancelha lateral "arqueada" (Mefisto) se poupar a porção lateral.'},
+  {id:'procero', name:'Prócero', pair:false, fib:90, cat:'expressao', tox:'alvo',
+   poly:[[190,150],[210,150],[209,205],[191,205]],
+   acao:'Puxa a pele da glabela para baixo e forma linhas horizontais na raiz do nariz.',
+   hof:'Toxina em 1 ponto central, junto com os corrugadores, no tratamento da glabela.',
+   risco:'Baixo risco quando aplicado na linha média.'},
+  {id:'corrugador', name:'Corrugador do supercílio', pair:true, fib:20, cat:'expressao', tox:'alvo',
+   poly:[[186,170],[172,159],[146,149],[127,151],[150,163],[178,181]],
+   acao:'Aproxima e abaixa as sobrancelhas: forma as linhas verticais da glabela (o “11”).',
+   hof:'Toxina na glabela, com pontos acima da borda orbital (≥ 1 cm).',
+   risco:'Ptose palpebral por difusão para o levantador da pálpebra superior.'},
+  {id:'oculi', name:'Orbicular do olho', pair:true, ring:{cx:148,cy:207,rx:50,ry:38,irx:31,iry:13}, cat:'expressao', tox:'alvo',
+   acao:'Fecha as pálpebras. A porção lateral forma os pés de galinha e abaixa a cauda da sobrancelha.',
+   hof:'Toxina na porção lateral (pés de galinha) e no ponto da cauda para elevar a sobrancelha.',
+   risco:'Aplicar fora da borda orbital. Difusão inferior pode atingir o zigomático maior (sorriso assimétrico).'},
+  {id:'nasal', name:'Nasal', pair:true, fib:60, cat:'expressao', tox:'alvo',
+   poly:[[186,248],[194,246],[198,282],[181,292],[176,283]],
+   acao:'Comprime (porção transversa) e dilata (porção alar) a narina; forma as bunny lines.',
+   hof:'Toxina para bunny lines e para suavizar o alargamento dinâmico da narina.',
+   risco:'Difusão para o LLSAN pode alongar o lábio superior.'},
+  {id:'septo', name:'Depressor do septo nasal', pair:false, fib:90, cat:'expressao', tox:'alvo',
+   poly:[[195,306],[205,306],[206,330],[194,330]],
+   acao:'Abaixa a ponta do nariz ao sorrir e encurta o lábio superior.',
+   hof:'Toxina em 1 ponto na base da columela quando a ponta cai ao sorrir; combina com a rinomodelação.',
+   risco:'Dose alta pode alterar o sorriso e o lábio superior.'},
+  {id:'llsan', name:'Levantador do lábio superior e da asa do nariz', pair:true, fib:82, cat:'expressao', tox:'alvo',
+   poly:[[177,218],[186,216],[194,322],[182,326],[175,296]],
+   acao:'Eleva o lábio superior e dilata a narina; é o principal responsável pelo sorriso gengival.',
+   hof:'Toxina em dose baixa no ponto de Yonsei (sorriso gengival).',
+   risco:'Alongamento excessivo do lábio e sorriso assimétrico.'},
+  {id:'lls', name:'Levantador do lábio superior', pair:true, fib:75, cat:'expressao', tox:'atencao',
+   poly:[[138,238],[160,236],[188,323],[177,328]],
+   acao:'Eleva o lábio superior e aprofunda o sulco nasogeniano.',
+   hof:'Participa do sorriso gengival. Raramente é alvo direto.',
+   risco:'Toxina inadvertida pode deixar o sorriso caído.'},
+  {id:'zmenor', name:'Zigomático menor', pair:true, fib:60, cat:'expressao', tox:'atencao',
+   poly:[[119,246],[131,242],[181,325],[172,331]],
+   acao:'Eleva o lábio superior lateralmente e aprofunda o nasogeniano.',
+   hof:'Zona de atenção: não é alvo de toxina estética.',
+   risco:'Paralisia parcial muda a expressão do sorriso.'},
+  {id:'zmaior', name:'Zigomático maior', pair:true, fib:55, cat:'expressao', tox:'atencao',
+   poly:[[97,246],[110,241],[170,339],[161,347]],
+   acao:'Puxa a comissura para cima e para fora: é o músculo do sorriso.',
+   hof:'Zona de atenção! Manter os pontos de pés de galinha acima da altura do zigomático.',
+   risco:'Difusão de toxina causa sorriso assimétrico ou caído.'},
+  {id:'risorio', name:'Risório', pair:true, fib:12, cat:'expressao', tox:'atencao',
+   poly:[[100,334],[104,325],[166,342],[164,351]],
+   acao:'Retrai a comissura lateralmente (sorriso largo, “forçado”).',
+   hof:'Zona de atenção ao aplicar no masseter: evitar a porção anterior.',
+   risco:'Sorriso paradoxal ou assimétrico após toxina no masseter.'},
+  {id:'oris', name:'Orbicular da boca', pair:false, ring:{cx:200,cy:347,rx:48,ry:30,irx:30,iry:13}, cat:'expressao', tox:'alvo',
+   acao:'Fecha e projeta os lábios. A contração repetida forma o “código de barras”.',
+   hof:'Microdoses de toxina no código de barras; ácido hialurônico em lábios e contorno.',
+   risco:'Dose alta dificulta assobiar, beber de canudo e articular palavras.'},
+  {id:'dao', name:'Depressor do ângulo da boca (DAO)', pair:true, fib:100, cat:'expressao', tox:'alvo',
+   poly:[[164,352],[176,356],[177,424],[131,418]],
+   acao:'Abaixa a comissura: expressão triste e linhas de marionete.',
+   hof:'Toxina no ponto lateral e inferior, perto da borda mandibular. Combina com AH na comissura.',
+   risco:'Difusão para o depressor do lábio inferior causa assimetria do sorriso.'},
+  {id:'dli', name:'Depressor do lábio inferior', pair:true, fib:72, cat:'expressao', tox:'atencao',
+   poly:[[178,366],[196,370],[196,414],[179,419]],
+   acao:'Abaixa e everte o lábio inferior (mostrar os dentes inferiores).',
+   hof:'Zona de atenção: geralmente não é alvo.',
+   risco:'Toxina inadvertida deixa o sorriso e a fala assimétricos.'},
+  {id:'mentual', name:'Mentual', pair:true, fib:90, cat:'expressao', tox:'alvo',
+   poly:[[186,388],[198,384],[198,429],[186,425]],
+   acao:'Eleva e projeta o lábio inferior e enruga o queixo (“casca de laranja”).',
+   hof:'Toxina em 1–2 pontos baixos e centrais; associa bem ao preenchimento de mento.',
+   risco:'Pontos altos podem atingir o depressor do lábio inferior.'},
+  {id:'masseter', name:'Masseter', pair:true, fib:80, cat:'mastigacao', tox:'alvo',
+   poly:[[90,252],[124,252],[132,365],[108,392],[92,370]],
+   acao:'Eleva a mandíbula (mastigação). Hipertrofia → face quadrada; ligado ao bruxismo.',
+   hof:'Toxina no terço inferior do ventre muscular para afinamento e bruxismo.',
+   risco:'Sorriso paradoxal (risório), fadiga ao mastigar, afundamento na bochecha.'},
+  {id:'temporal', name:'Temporal', pair:true, fib:80, cat:'mastigacao', tox:'neutro',
+   poly:[[78,118],[108,98],[113,150],[105,205],[86,232],[76,180]],
+   acao:'Eleva e retrai a mandíbula; participa do bruxismo e da cefaleia tensional.',
+   hof:'A fossa temporal é região de preenchimento (AH ou bioestimulador). Toxina no bruxismo em casos selecionados.',
+   risco:'Atenção à artéria temporal superficial no preenchimento.'},
+  {id:'platisma', name:'Platisma', pair:true, fib:72, cat:'expressao', tox:'alvo',
+   poly:[[120,404],[158,430],[184,520],[128,520],[134,468]],
+   acao:'Abaixa a mandíbula e as comissuras e tensiona a pele do pescoço (bandas platismais).',
+   hof:'Toxina nas bandas e ao longo da borda mandibular (Nefertiti lift).',
+   risco:'Doses altas podem causar dificuldade para engolir ou falar.'},
+];
+const TOX_LABEL={alvo:['Alvo de toxina','ok'],atencao:['Zona de atenção','bad'],neutro:['Outros','info']};
+// pontos anatômicos do rosto modelo (mesma convenção dos pontos frontais do app)
+const MODEL_PTS={tri:[200,58],gla:[200,172],puR:[148,205],puL:[252,205],clR:[118,207],cmR:[178,208],cmL:[222,208],clL:[282,207],
+  brR:[140,157],brL:[260,157],zyR:[76,230],zyL:[324,230],alR:[178,296],alL:[222,296],sn:[200,306],ls:[200,329],st:[200,345],li:[200,365],
+  chR:[166,345],chL:[234,345],goR:[98,372],goL:[302,372],me:[200,442]};
+// vínculo achados/condutas → músculos
+const MUSCLE_LINKS={comissura:['dao'],comissuraAssim:['dao','dli'],masseter:['masseter','risorio'],mandibulaAssim:['masseter'],olharCansado:['oculi','frontal','zmaior'],
+  sobrancelhaAssim:['frontal','oculi','corrugador'],rinoPonta:['septo'],mentual:['mentual'],sulcoMentolabial:['mentual','dli'],papada:['platisma'],nariz:['nasal'],
+  chk_frontal:['frontal'],chk_glabela:['corrugador','procero'],chk_pes:['oculi','zmaior'],chk_bunny:['nasal'],chk_gengival:['llsan','lls','zmenor'],chk_mentual:['mentual'],
+  chk_bruxismo:['masseter','temporal'],chk_platisma:['platisma'],chk_marionete:['dao'],chk_labiosFinos:['oris'],labioVolume:['oris'],labioInferior:['oris'],labioSuperior:['oris'],chk_temporal:['temporal']};
+
+// ---------- geometria ----------
+function musclePolys(m){ // devolve lista de polígonos (cada um: array de [x,y]) por lado
+  const sides=m.pair?[1,-1]:[1]; const out=[];
+  for(const sgn of sides){
+    const mir=p=>sgn===1?p:[400-p[0],p[1]];
+    if(m.ring){ const r=m.ring, cx=sgn===1?r.cx:400-r.cx, outer=[], inner=[];
+      for(let i=0;i<48;i++){ const t=i/48*Math.PI*2; outer.push([cx+r.rx*Math.cos(t), r.cy+r.ry*Math.sin(t)]); inner.push([cx+r.irx*Math.cos(t), r.cy+r.iry*Math.sin(t)]); }
+      out.push({outer,inner,side:sgn}); }
+    else out.push({outer:m.poly.map(mir),side:sgn});
+    if(!m.pair) break;
+  }
+  return out;
+}
+function densify(poly,n){ const out=[]; for(let i=0;i<poly.length;i++){ const a=poly[i], b=poly[(i+1)%poly.length]; for(let k=0;k<n;k++){ const t=k/n; out.push([a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t]); } } return out; }
+
+// ---------- SVG do rosto modelo ----------
+function atlasSVG(sel, filter){
+  const face='M200,38 C262,38 318,78 324,150 C328,190 328,215 322,240 C318,285 312,330 304,372 C290,405 250,438 200,446 C150,438 110,405 96,372 C88,330 82,285 78,240 C72,215 72,190 76,150 C82,78 138,38 200,38 Z';
+  const neck='M150,420 C148,460 144,495 138,520 L262,520 C256,495 252,460 250,420 Z';
+  const ear=(s)=>{ const m=x=>s>0?x:400-x; return `M${m(322)},214 C${m(344)},206 ${m(350)},236 ${m(344)},262 C${m(340)},284 ${m(330)},292 ${m(316)},288 Z`; };
+  let defs='';
+  MUSCLES.forEach(m=>{ if(m.fib==null) return; [1,-1].forEach(s=>{ const a=s===1?m.fib:180-m.fib;
+    defs+=`<pattern id="fib-${m.id}-${s>0?'a':'b'}" patternUnits="userSpaceOnUse" width="5" height="5" patternTransform="rotate(${a})"><rect width="5" height="5" fill="#c4544a"/><line x1="0" y1="0.5" x2="5" y2="0.5" stroke="#e48e83" stroke-width="1"/></pattern>`; }); });
+  defs+=`<pattern id="fib-ring" patternUnits="userSpaceOnUse" width="5" height="5"><rect width="5" height="5" fill="#c4544a"/><circle cx="2.5" cy="2.5" r="0.9" fill="#e48e83"/></pattern>`;
+  defs+=`<radialGradient id="skin" cx="50%" cy="40%" r="65%"><stop offset="0" stop-color="#f6dccb"/><stop offset="1" stop-color="#e9c2ab"/></radialGradient>`;
+  let body='';
+  MUSCLES.forEach(m=>{
+    const dim = filter && filter!=='todos' && !(filter==='alvo'?m.tox==='alvo':filter==='atencao'?m.tox==='atencao':m.cat===filter);
+    musclePolys(m).forEach(pp=>{
+      let d='M'+pp.outer.map(p=>p.map(v=>v.toFixed(1)).join(',')).join(' L')+' Z';
+      if(pp.inner) d+=' M'+pp.inner.slice().reverse().map(p=>p.map(v=>v.toFixed(1)).join(',')).join(' L')+' Z';
+      const fill = m.ring?'url(#fib-ring)':`url(#fib-${m.id}-${pp.side>0?'a':'b'})`;
+      const isSel=sel===m.id;
+      body+=`<path class="msc${isSel?' sel':''}" data-id="${m.id}" d="${d}" fill="${fill}" fill-rule="evenodd" opacity="${dim?0.18:(isSel?1:0.86)}" stroke="${isSel?'#C9A06D':(m.tox==='atencao'?'#7a2b25':'#8f3a32')}" stroke-width="${isSel?2.4:0.8}" ${m.tox==='atencao'&&!dim?'stroke-dasharray="3 2"':''}/>`;
+    });
+  });
+  // traços do rosto (por cima, discretos)
+  const feat=`<g fill="none" stroke="#7b5a4c" stroke-width="1.3" stroke-linecap="round" opacity=".75">
+    <path d="M114,168 Q140,150 182,162"/><path d="M286,168 Q260,150 218,162"/>
+    <path d="M120,208 Q148,192 178,209 Q148,220 120,208 Z" fill="#fbf4ef"/><path d="M280,208 Q252,192 222,209 Q252,220 280,208 Z" fill="#fbf4ef"/>
+    <circle cx="148" cy="207" r="7" fill="#6b4a3c" stroke="none"/><circle cx="252" cy="207" r="7" fill="#6b4a3c" stroke="none"/>
+    <path d="M190,214 C188,240 186,262 183,284"/><path d="M178,296 Q186,306 194,302 Q200,309 206,302 Q214,306 222,296"/>
+    <path d="M166,345 Q182,336 192,333 Q200,336 208,333 Q218,336 234,345 Q200,350 166,345 Z" fill="#d98a86" stroke="#b9675f"/>
+    <path d="M166,345 Q200,350 234,345 Q218,366 200,368 Q182,366 166,345 Z" fill="#cf7b77" stroke="#b9675f"/>
+  </g>`;
+  return `<svg viewBox="0 0 400 520" xmlns="http://www.w3.org/2000/svg" class="atlas-svg"><defs>${defs}</defs>
+    <path d="${neck}" fill="url(#skin)" stroke="#d9ad95"/><path d="${ear(1)}" fill="#ecc6b0" stroke="#d9ad95"/><path d="${ear(-1)}" fill="#ecc6b0" stroke="#d9ad95"/>
+    <path d="${face}" fill="url(#skin)" stroke="#d9ad95" stroke-width="1.5"/>${body}${feat}</svg>`;
+}
+
+// ---------- Thin-plate spline: rosto modelo → foto do paciente ----------
+function tpsFit(src,dst,lambda){
+  const n=src.length, N=n+3, U=r2=>r2>1e-12?r2*Math.log(r2):0;
+  const A=[]; for(let i=0;i<N;i++) A.push(new Float64Array(N));
+  for(let i=0;i<n;i++){ for(let j=0;j<n;j++){ const dx=src[i][0]-src[j][0], dy=src[i][1]-src[j][1]; A[i][j]=U(dx*dx+dy*dy)+(i===j?lambda:0); }
+    A[i][n]=1; A[i][n+1]=src[i][0]; A[i][n+2]=src[i][1]; A[n][i]=1; A[n+1][i]=src[i][0]; A[n+2][i]=src[i][1]; }
+  const solve=(b)=>{ const M=A.map(r=>Float64Array.from(r)), v=Float64Array.from(b);
+    for(let c=0;c<N;c++){ let p=c; for(let r=c+1;r<N;r++) if(Math.abs(M[r][c])>Math.abs(M[p][c])) p=r;
+      [M[c],M[p]]=[M[p],M[c]]; [v[c],v[p]]=[v[p],v[c]]; const d=M[c][c]||1e-12;
+      for(let r=c+1;r<N;r++){ const f=M[r][c]/d; if(!f) continue; for(let k=c;k<N;k++) M[r][k]-=f*M[c][k]; v[r]-=f*v[c]; } }
+    const x=new Float64Array(N); for(let r=N-1;r>=0;r--){ let s=v[r]; for(let k=r+1;k<N;k++) s-=M[r][k]*x[k]; x[r]=s/(M[r][r]||1e-12); } return x; };
+  const bx=new Float64Array(N), by=new Float64Array(N); for(let i=0;i<n;i++){ bx[i]=dst[i][0]; by[i]=dst[i][1]; }
+  const wx=solve(bx), wy=solve(by);
+  return p=>{ let x=wx[n]+wx[n+1]*p[0]+wx[n+2]*p[1], y=wy[n]+wy[n+1]*p[0]+wy[n+2]*p[1];
+    for(let i=0;i<n;i++){ const dx=p[0]-src[i][0], dy=p[1]-src[i][1], u=U(dx*dx+dy*dy); x+=wx[i]*u; y+=wy[i]*u; } return [x,y]; };
+}
+
+</script>
 <script>
 // =====================================================================
 //  DEFINIÇÕES DE PONTOS
@@ -905,6 +1130,7 @@ function render(){
   const s=A(); if(!s) return;
   ctx.setTransform(1,0,0,1,0,0); ctx.clearRect(0,0,s.W,s.H); ctx.drawImage(s.work,0,0);
   const lw=lineW();
+  if(s.view==='front' && $('tgMus').checked) drawMuscles(s,lw);
   if(s.result && $('tgGuides').checked) (s.view==='front'?drawFrontGuides:drawProfileGuides)(s,lw);
   const defs=DEFS[s.view];
   if($('tgPts').checked || !s.result) defs.forEach((p,i)=>{
@@ -1006,7 +1232,7 @@ function updateUI(){
   $('status').innerHTML=`<b>Vista: ${VIEW_NAME[s.view]}${s.view==='profile'&&s.facing?` (voltado para a ${s.facing==='R'?'direita':'esquerda'})`:''}${s.view==='front'&&s.pose&&Math.abs(s.pose.yaw)>15?' · oblíqua (¾)':''}</b><div class="meta">${meth}${pose}${sc}</div>`+
     (s.askView?`<div class="find" style="margin-top:8px"><div><b>Não reconheci o rosto automaticamente.</b><small>Esta foto é frontal ou de perfil? Depois é só tocar perto de cada ponto.</small><div class="btns" style="margin-top:8px"><button class="btn small" data-ask="front">Frontal</button><button class="btn small" data-ask="profile">Perfil</button></div></div></div>`:'')+
     (s.flags.length?`<div style="margin-top:8px">${s.flags.map(f=>`<div class="find info" style="margin-bottom:6px"><small style="color:var(--ink)">${f}</small></div>`).join('')}</div>`:'');
-  $('btnMirror').classList.toggle('hidden', s.view!=='front');
+  $('btnMirror').classList.toggle('hidden', s.view!=='front'); $('tgMusWrap').classList.toggle('hidden', s.view!=='front');
 }
 $('status').addEventListener('click',e=>{ const v=e.target.dataset&&e.target.dataset.ask; if(!v) return; const s=A();
   S.slots[s.view]=null; s.askView=false; resetManual(s,v); s.cur=0; S.slots[v]=s; S.active=v; refreshResults(); updateUI(); render(); toast('Toque perto de cada ponto, na ordem indicada'); });
@@ -1022,7 +1248,7 @@ $('btnMirror').onclick=()=>{ const s=A(); if(!s) return; s.mirrored=!s.mirrored;
   const sw={}; for(const k in s.pts){ const p={x:s.W-s.pts[k].x,y:s.pts[k].y}; const m=k.match(/^(.*)([RL])$/); sw[m?m[1]+(m[2]==='R'?'L':'R'):k]=p; } s.pts=sw;
   if(s.mesh) s.mesh=s.mesh.map(p=>({x:s.W-p.x,y:p.y,z:p.z}));
   if(complete(s)) analyzeAll(); render(); toast(s.mirrored?'Foto espelhada':'Espelhamento desfeito'); };
-['tgIssues','tgGuides','tgPts','tgLabels'].forEach(id=>$(id).addEventListener('change',render));
+['tgIssues','tgGuides','tgPts','tgLabels','tgMus'].forEach(id=>$(id).addEventListener('change',render));
 $('btnReset').onclick=()=>{ resetPatient(); window.scrollTo({top:0,behavior:'smooth'}); toast('Novo paciente'); };
 $('pSex').addEventListener('change',()=>{ for(const v in S.slots) if(S.slots[v]) computeScale(S.slots[v]); analyzeAll(); });
 $('pIpd').addEventListener('change',()=>{ for(const v in S.slots) if(S.slots[v]) computeScale(S.slots[v]); analyzeAll(); });
@@ -1246,10 +1472,10 @@ const PRI_LABEL={1:['Estrutural','bad'],2:['Prioritário','warn'],3:['Refinament
 function buildPlan(){
   const items=new Map();
   ['front','profile'].forEach(v=>{ const r=S.slots[v]&&S.slots[v].result; if(!r) return;
-    r.findings.forEach(f=>{ (f.tagList||[]).forEach(t=>{ if(!KB[t]) return; if(!items.has(t)) items.set(t,{...KB[t],why:[]}); items.get(t).why.push(`${VIEW_NAME[v]}: ${f.title.toLowerCase()}`); }); });
+    r.findings.forEach(f=>{ (f.tagList||[]).forEach(t=>{ if(!KB[t]) return; if(!items.has(t)) items.set(t,{...KB[t],k:t,why:[]}); items.get(t).why.push(`${VIEW_NAME[v]}: ${f.title.toLowerCase()}`); }); });
   });
-  CHECKS.forEach(c=>{ if(!S.checks.has(c.id)) return; items.set('chk_'+c.id,{area:c.area,proc:c.proc,txt:c.txt,pri:c.pri,why:['Exame clínico: '+c.label.toLowerCase()]});
-    (c.add||[]).forEach(t=>{ if(KB[t]&&!items.has(t)) items.set(t,{...KB[t],why:['Relacionado a: '+c.label.toLowerCase()]}); }); });
+  CHECKS.forEach(c=>{ if(!S.checks.has(c.id)) return; items.set('chk_'+c.id,{area:c.area,proc:c.proc,txt:c.txt,pri:c.pri,k:'chk_'+c.id,why:['Exame clínico: '+c.label.toLowerCase()]});
+    (c.add||[]).forEach(t=>{ if(KB[t]&&!items.has(t)) items.set(t,{...KB[t],k:t,why:['Relacionado a: '+c.label.toLowerCase()]}); }); });
   return [...items.values()].sort((a,b)=>a.pri-b.pri);
 }
 
@@ -1312,7 +1538,7 @@ function renderPlan(){
   const al=(typeof anamAlerts==='function')?anamAlerts():[];
   if($('anamAlerts')) $('anamAlerts').innerHTML = al.length?`<h3 style="margin-bottom:8px">Anamnese</h3>`+al.map(([sv,t,d])=>`<div class="alert ${sv}"><b>${t}</b><small>${d}</small></div>`).join(''):'';
   const plan=buildPlan();
-  $('plan').innerHTML=plan.length?plan.map(p=>{ const [lab,cls]=PRI_LABEL[p.pri]; return `<div class="sug"><div class="head"><div><div class="area">${p.area}</div><b>${p.proc}</b></div><span class="chip ${cls}">${lab}</span></div><p>${p.txt}</p>${p.why.length?`<div class="why">↳ ${[...new Set(p.why)].join(' · ')}</div>`:''}</div>`; }).join('')
+  $('plan').innerHTML=plan.length?plan.map(p=>{ const [lab,cls]=PRI_LABEL[p.pri]; return `<div class="sug"><div class="head"><div><div class="area">${p.area}</div><b>${p.proc}</b></div><span class="chip ${cls}">${lab}</span></div><p>${p.txt}</p>${p.why.length?`<div class="why">↳ ${[...new Set(p.why)].join(' · ')}</div>`:''}${(MUSCLE_LINKS[p.k]||[]).length?`<div class="mchips">${MUSCLE_LINKS[p.k].map(id=>{const m=MUSCLES.find(x=>x.id===id);return `<button data-mus="${id}">◎ ${m.name}</button>`;}).join('')}</div>`:''}</div>`; }).join('')
     :'<p style="color:var(--muted)">Nenhuma conduta sugerida pelas fotos. Marque os achados do exame clínico para montar o plano.</p>';
   const has=a=>plan.some(p=>a.includes(p.pri)), seq=[];
   if(plan.some(p=>/Toxina|toxina/.test(p.proc))) seq.push('<b>Sessão 1 – toxina botulínica.</b> Retorno em 15 dias para avaliação e retoque.');
@@ -1395,7 +1621,7 @@ async function boot(){
   BOOT.done=true; $('engineStatus').innerHTML=BOOT.msg; $('homeEngine').innerHTML=BOOT.msg;
 }
 boot();
-function show(screen){ ['home','appScreen'].forEach(id=>$(id).classList.toggle('hidden',id!==screen)); window.scrollTo(0,0);
+function show(screen){ ['home','appScreen','atlasScreen'].forEach(id=>$(id).classList.toggle('hidden',id!==screen)); window.scrollTo(0,0);
   const has=!!(S.slots.front||S.slots.profile||$('pName').value); $('goResume').style.display=(screen==='home'&&has)?'flex':'none'; $('resumeName').textContent=$('pName').value||'Paciente sem nome'; }
 $('btnEnter').onclick=()=>{ $('splash').classList.add('out'); show('home'); setTimeout(()=>$('splash').remove(),600); };
 $('goNew').onclick=()=>{ resetPatient(); show('appScreen'); setTimeout(()=>$('pName').focus(),200); };
@@ -1438,6 +1664,50 @@ function resetPatient(){
   ['pName','pBirth','pIpd','aQueixa','aPrevTxt','aAlerg','aMeds','aExpect'].forEach(id=>$(id).value='');
   $('pAge').classList.add('hidden'); $('anam').open=false;
   ['work','results'].forEach(i=>$(i).classList.add('hidden'));
+}
+// ---------- Atlas muscular ----------
+const ATLAS={sel:'dao',filter:'todos',back:'home'};
+function renderAtlas(){
+  $('atlasFig').innerHTML=atlasSVG(ATLAS.sel,ATLAS.filter);
+  const m=MUSCLES.find(x=>x.id===ATLAS.sel)||MUSCLES[0], [tl,tc]=TOX_LABEL[m.tox];
+  $('atlasInfo').innerHTML=`<div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><h3>${m.name}</h3><span class="chip ${tc}">${tl}</span></div>
+    <dl><div><dt>Ação</dt><dd>${m.acao}</dd></div><div><dt>Na HOF</dt><dd>${m.hof}</dd></div><div><dt>Riscos e cuidados</dt><dd>${m.risco}</dd></div></dl>`;
+  const vis=MUSCLES.filter(x=>ATLAS.filter==='todos'||(ATLAS.filter==='alvo'?x.tox==='alvo':ATLAS.filter==='atencao'?x.tox==='atencao':x.cat===ATLAS.filter));
+  $('atlasList').innerHTML=vis.map(x=>`<button data-id="${x.id}" class="${x.id===ATLAS.sel?'on':''}"><i class="${x.tox==='atencao'?'atencao':''}"></i>${x.name}</button>`).join('');
+}
+function openAtlas(id,from){ if(id) ATLAS.sel=id; ATLAS.back=from||'home'; show('atlasScreen'); renderAtlas(); }
+$('atlasFig').addEventListener('click',e=>{ const id=e.target.closest('.msc')?.dataset.id; if(id){ ATLAS.sel=id; renderAtlas(); } });
+$('atlasList').addEventListener('click',e=>{ const id=e.target.closest('button')?.dataset.id; if(id){ ATLAS.sel=id; renderAtlas(); if(innerWidth<880) $('atlasInfo').scrollIntoView({behavior:'smooth',block:'center'}); } });
+$('atlasFilter').addEventListener('click',e=>{ const f=e.target.dataset.f; if(!f) return; ATLAS.filter=f; document.querySelectorAll('#atlasFilter .chipbtn').forEach(b=>b.classList.toggle('on',b.dataset.f===f)); renderAtlas(); });
+$('atlasBack').onclick=()=>show(ATLAS.back);
+document.querySelector('#atlasScreen [data-home]').onclick=()=>show('home');
+$('goAtlas').onclick=()=>openAtlas(null,'home');
+document.addEventListener('click',e=>{ const id=e.target.closest('[data-mus]')?.dataset.mus; if(id) openAtlas(id,'appScreen'); });
+// músculos deformados sobre a foto frontal do paciente (thin-plate spline a partir dos pontos anatômicos)
+let MUS_CACHE={key:'',map:null};
+function musMap(s){
+  const ids=Object.keys(MODEL_PTS).filter(k=>s.pts[k]); if(ids.length<12) return null;
+  const key=ids.map(k=>k+Math.round(s.pts[k].x)+','+Math.round(s.pts[k].y)).join('|')+s.W;
+  if(MUS_CACHE.key===key) return MUS_CACHE.map;
+  const src=ids.map(k=>[MODEL_PTS[k][0]/400,MODEL_PTS[k][1]/400]), dst=ids.map(k=>[s.pts[k].x,s.pts[k].y]);
+  const f=tpsFit(src,dst,0.002); const map=p=>f([p[0]/400,p[1]/400]); MUS_CACHE={key,map}; return map;
+}
+function activeMuscles(){ const set=new Set(); buildPlan().forEach(p=>(MUSCLE_LINKS[p.k]||[]).forEach(m=>set.add(m))); return set; }
+function drawMuscles(s,lw){
+  const map=musMap(s); if(!map) return; const act=activeMuscles();
+  ctx.save();
+  MUSCLES.forEach(m=>{ if(m.id==='platisma') return;
+    const on=act.has(m.id), col=m.tox==='atencao'?'180,67,58':'196,84,74';
+    musclePolys(m).forEach(pp=>{
+      ctx.beginPath(); const o=densify(pp.outer,m.ring?1:6).map(map); o.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1])); ctx.closePath();
+      if(pp.inner){ const q=densify(pp.inner,1).map(map).reverse(); q.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1])); ctx.closePath(); }
+      ctx.fillStyle=`rgba(${col},${on?0.5:(act.size?0.14:0.3)})`; ctx.fill('evenodd');
+      ctx.setLineDash(m.tox==='atencao'?[lw*3,lw*2]:[]); ctx.lineWidth=on?lw*1.6:lw*0.7; ctx.strokeStyle=on?'#C9A06D':`rgba(${col},.7)`; ctx.stroke();
+    });
+    if(on){ const c=musclePolys(m)[0].outer, cx=c.reduce((t,p)=>t+p[0],0)/c.length, cy=c.reduce((t,p)=>t+p[1],0)/c.length; const p=map([cx,cy]);
+      ctx.setLineDash([]); label(m.name.split(' (')[0],{x:p[0]+lw*3,y:p[1]},'#fff',lw*0.85); }
+  });
+  ctx.restore();
 }
 // ---------- App instalável (PWA) ----------
 (function(){
