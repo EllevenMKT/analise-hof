@@ -1,0 +1,1116 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#8b5e48">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Análise HOF">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<title>Análise Facial HOF</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f6f3ef; --card:#ffffff; --ink:#1f1c1a; --muted:#6f6760; --line:#e6dfd7;
+  --accent:#8b5e48; --accent-soft:#f3e9e2; --ok:#2f7d5b; --ok-soft:#e5f3ec;
+  --warn:#b7791f; --warn-soft:#fbf1df; --bad:#b4433a; --bad-soft:#f8e6e4;
+  --r:14px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:'DM Sans',system-ui,sans-serif;font-size:15px;line-height:1.5}
+h1,h2,h3{font-family:'Fraunces',Georgia,serif;font-weight:600;margin:0;letter-spacing:-.01em}
+h1{font-size:1.65rem} h2{font-size:1.25rem;margin-bottom:.75rem} h3{font-size:1.02rem;margin-bottom:.4rem}
+.wrap{max-width:1200px;margin:0 auto;padding:calc(20px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right)) calc(60px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left))}
+.camrow{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:12px}
+.install{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:var(--ink);color:#fff;border-radius:var(--r);padding:12px 16px;margin-bottom:16px}
+.install p{margin:0;font-size:.9rem}
+.install .btn{background:#fff;border-color:#fff;color:var(--ink)}
+header.top{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:18px}
+header.top p{margin:.2rem 0 0;color:var(--muted)}
+.badge{display:inline-block;font-size:.72rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);background:var(--accent-soft);padding:4px 10px;border-radius:99px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px}
+.grid{display:grid;gap:16px}
+@media(min-width:900px){.grid.two{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr)}}
+label{display:block;font-size:.82rem;font-weight:600;color:var(--muted);margin-bottom:4px}
+input[type=text],input[type=number],select{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;font:inherit;background:#fff;color:var(--ink)}
+.row{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.btn{appearance:none;border:1px solid var(--line);background:#fff;color:var(--ink);font:inherit;font-weight:600;padding:10px 16px;border-radius:10px;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
+.btn:hover{border-color:#cdbfb2}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.small{padding:6px 11px;font-size:.85rem}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+.drop{border:2px dashed #d6cabe;border-radius:var(--r);padding:24px 16px;text-align:center;background:#fbf9f6;cursor:pointer;transition:.15s}
+.drop:hover,.drop.over{border-color:var(--accent);background:var(--accent-soft)}
+.drop strong{display:block;font-size:1.05rem;margin-bottom:4px}
+.drop span{color:var(--muted);font-size:.9rem}
+.tips{margin:12px 0 0;padding:0;list-style:none;display:grid;gap:6px;font-size:.88rem;color:var(--muted)}
+.tips li::before{content:"•";color:var(--accent);font-weight:700;margin-right:8px}
+.stage{position:relative;background:#14110f;border-radius:var(--r);overflow:hidden;touch-action:none;user-select:none}
+.stage canvas{display:block;width:100%;height:auto;cursor:crosshair}
+.busy{position:absolute;inset:0;display:grid;place-items:center;background:rgba(20,17,15,.55);color:#fff;font-weight:600;text-align:center;padding:20px}
+.busy i{display:block;width:36px;height:36px;border:3px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;margin:0 auto 10px;animation:sp 0.9s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.guide{display:flex;gap:12px;align-items:center;padding:12px 14px;background:var(--accent-soft);border-radius:12px;margin-bottom:12px}
+.guide .num{flex:none;width:34px;height:34px;border-radius:50%;background:var(--accent);color:#fff;font-weight:700;display:grid;place-items:center}
+.guide b{display:block} .guide small{color:var(--muted)}
+.progress{height:6px;background:var(--line);border-radius:99px;overflow:hidden;margin:10px 0 0}
+.progress i{display:block;height:100%;background:var(--accent);width:0;transition:width .2s}
+.status{font-size:.88rem;color:var(--ink);margin-top:10px;min-height:1.3em}
+.status .meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.hidden{display:none!important}
+.toggles{display:flex;gap:14px;flex-wrap:wrap;font-size:.86rem;margin-top:10px}
+.toggles label{display:flex;align-items:center;gap:6px;font-weight:500;color:var(--ink);margin:0;cursor:pointer}
+.tabs{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.tab{border:1px solid var(--line);background:#fff;border-radius:99px;padding:6px 14px;font:inherit;font-weight:600;font-size:.88rem;cursor:pointer;color:var(--muted)}
+.tab.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.tab .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--ok);margin-left:6px;vertical-align:middle}
+table{width:100%;border-collapse:collapse;font-size:.9rem}
+th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600}
+td.v{font-variant-numeric:tabular-nums;white-space:nowrap}
+.chip{display:inline-block;font-size:.74rem;font-weight:600;padding:2px 9px;border-radius:99px;white-space:nowrap}
+.chip.ok{background:var(--ok-soft);color:var(--ok)} .chip.warn{background:var(--warn-soft);color:var(--warn)}
+.chip.bad{background:var(--bad-soft);color:var(--bad)} .chip.info{background:#eef0f3;color:#55606e}
+.find{border-left:3px solid var(--warn);background:#fffdf9;padding:10px 12px;border-radius:0 10px 10px 0;margin-bottom:8px;display:flex;gap:10px}
+.find.bad{border-color:var(--bad)} .find.info{border-color:#9aa5b1} .find.okk{border-color:var(--ok)}
+.find .n{flex:none;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:.78rem;font-weight:700;color:#fff;background:var(--warn)}
+.find.bad .n{background:var(--bad)}
+.find b{display:block} .find small{color:var(--muted)}
+.sug{border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px;background:#fff}
+.sug .head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.sug .area{font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);font-weight:600}
+.sug b{display:block;font-size:1rem;margin:2px 0 4px}
+.sug p{margin:0;font-size:.9rem;color:#4a4440}
+.sug .why{font-size:.8rem;color:var(--muted);margin-top:6px}
+.check{display:grid;gap:6px;grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+.check label{display:flex;gap:8px;align-items:flex-start;font-weight:500;color:var(--ink);font-size:.9rem;padding:8px 10px;border:1px solid var(--line);border-radius:10px;cursor:pointer;margin:0}
+.check input{margin-top:3px;accent-color:var(--accent)}
+.note{font-size:.84rem;color:var(--muted);background:#faf7f3;border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.steps{counter-reset:s;list-style:none;padding:0;margin:0;display:grid;gap:8px}
+.steps li{counter-increment:s;display:flex;gap:10px;font-size:.9rem}
+.steps li::before{content:counter(s);flex:none;width:24px;height:24px;border-radius:50%;background:var(--accent-soft);color:var(--accent);font-weight:700;display:grid;place-items:center;font-size:.8rem}
+.section{margin-top:16px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:14px}
+.kpi{background:#faf7f3;border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.kpi span{display:block;font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.kpi b{font-size:1.2rem;font-family:'Fraunces',serif}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:99px;font-size:.9rem;opacity:0;pointer-events:none;transition:.25s;z-index:9}
+.toast.show{opacity:1}
+.pointlist{display:flex;flex-wrap:wrap;gap:4px;margin-top:10px}
+.pointlist span{font-size:.72rem;padding:2px 7px;border-radius:99px;background:#f0ebe5;color:var(--muted)}
+.pointlist span.done{background:var(--ok-soft);color:var(--ok)}
+.pointlist span.cur{background:var(--accent);color:#fff}
+.pointlist span.opt{border:1px dashed #cdbfb2}
+.vhead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:18px 0 8px}
+.vhead:first-child{margin-top:0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <span class="badge">Harmonização Orofacial · apoio à avaliação</span>
+      <h1 style="margin-top:8px">Análise facial automática</h1>
+      <p>Envie fotos frontal e/ou de perfil: a vista é identificada sozinha, os pontos são detectados e o plano é montado.</p>
+    </div>
+    <button class="btn small" id="btnReset">Novo paciente</button>
+  </header>
+
+  <div class="install hidden" id="installBar"><p id="installTxt">Instale o app no celular: abre em tela cheia e funciona sem internet.</p><button class="btn small" id="btnInstall">Instalar app</button></div>
+  <section class="grid two">
+    <div class="card">
+      <h2>1. Paciente</h2>
+      <div class="row">
+        <div><label for="pName">Nome / identificação</label><input type="text" id="pName" placeholder="Ex.: Maria S."></div>
+        <div><label for="pSex">Referência estética</label>
+          <select id="pSex"><option value="F">Feminina</option><option value="M">Masculina</option></select></div>
+        <div><label for="pIpd">Distância interpupilar (mm)</label><input type="number" id="pIpd" placeholder="automático (íris)" min="45" max="80" step="0.5"></div>
+      </div>
+      <p class="note" style="margin-top:12px">A escala em milímetros é calculada pelo diâmetro da íris (≈11,7 mm, praticamente constante em adultos). Se você medir a distância interpupilar com régua ou pupilômetro, preencha acima para maior precisão na foto frontal.</p>
+    </div>
+    <div class="card">
+      <h2>2. Fotos</h2>
+      <div class="row" style="margin-bottom:10px">
+        <div><label for="pView">Tipo da próxima foto</label>
+          <select id="pView"><option value="auto">Identificar automaticamente</option><option value="front">Frontal</option><option value="profile">Perfil (lateral)</option></select></div>
+      </div>
+      <div class="drop" id="drop">
+        <strong>Foto do paciente</strong>
+        <span>frontal, ¾ ou perfil · envie uma de cada para a análise completa</span>
+        <div class="camrow">
+          <button class="btn primary" type="button" id="btnCam">📷 Tirar foto</button>
+          <button class="btn" type="button" id="btnGal">🖼️ Escolher da galeria</button>
+        </div>
+        <input type="file" id="file" accept="image/*" class="hidden">
+        <input type="file" id="fileCam" accept="image/*" capture="environment" class="hidden">
+      </div>
+      <div id="engineStatus" style="margin-top:10px;font-size:.85rem;color:var(--muted)">Motor de detecção facial: carregando…</div>
+      <p style="font-size:.8rem;color:var(--muted);margin:10px 0 0">🔒 As fotos são processadas só neste aparelho: nada é enviado para servidor.</p>
+      <ul class="tips">
+        <li>Expressão neutra, lábios relaxados em contato, sem sorrir</li>
+        <li>Cabelo preso, testa e orelhas visíveis, sem óculos</li>
+        <li>Perfil: rosto a 90°, fundo liso e claro, pescoço visível, olhar no horizonte</li>
+        <li>Câmera na altura do rosto a ~1 m, luz uniforme</li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="work" class="grid two hidden" style="margin-top:16px">
+    <div>
+      <div class="tabs" id="tabs"></div>
+      <div class="stage" id="stage"><canvas id="cv"></canvas><div class="busy hidden" id="busy"><div><i></i><span id="busyTxt">Analisando…</span></div></div></div>
+      <div class="toggles">
+        <label><input type="checkbox" id="tgIssues" checked> Pontos a melhorar</label>
+        <label><input type="checkbox" id="tgGuides" checked> Linhas de referência</label>
+        <label><input type="checkbox" id="tgPts" checked> Pontos anatômicos</label>
+        <label><input type="checkbox" id="tgLabels"> Nomes</label>
+      </div>
+    </div>
+    <div class="card">
+      <h2 id="ptsTitle">3. Pontos anatômicos</h2>
+      <div class="status" id="status"></div>
+      <div class="guide" id="guide" style="margin-top:12px">
+        <div class="num" id="gNum">1</div>
+        <div><b id="gName">—</b><small id="gDesc"></small></div>
+      </div>
+      <div class="progress"><i id="prog"></i></div>
+      <div class="pointlist" id="plist"></div>
+      <div class="btns" style="margin-top:12px">
+        <button class="btn small" id="btnAuto">Detectar novamente</button>
+        <button class="btn small" id="btnManual">Marcar manualmente</button>
+        <button class="btn small" id="btnUndo">Desfazer ponto</button>
+        <button class="btn small hidden" id="btnSkip">Pular (opcional)</button>
+        <button class="btn small" id="btnSwap">Trocar vista</button>
+        <button class="btn small" id="btnMirror">Espelhar foto</button>
+      </div>
+      <p class="note" style="margin-top:12px">Confira os pontos detectados e arraste qualquer um para corrigir. A análise é recalculada na hora, com lupa no canto enquanto você arrasta. Na foto frontal, o lado direito do paciente aparece à esquerda da imagem. Se for selfie espelhada, use “Espelhar foto”.</p>
+    </div>
+  </section>
+
+  <section id="results" class="hidden" style="margin-top:16px">
+    <div class="grid two">
+      <div class="card"><div id="measures"></div></div>
+      <div class="card">
+        <h2>Pontos a melhorar</h2>
+        <div id="findings"></div>
+        <div class="section">
+          <h3>Achados do exame clínico</h3>
+          <p style="margin:0 0 8px;font-size:.86rem;color:var(--muted)">A foto não mostra tudo. Marque o que observar no exame: o plano é atualizado na hora.</p>
+          <div class="check" id="checklist"></div>
+        </div>
+      </div>
+    </div>
+    <div class="card section">
+      <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap">
+        <h2 style="margin:0">Plano sugerido</h2>
+        <div class="btns">
+          <button class="btn small" id="btnCopy">Copiar relatório</button>
+          <button class="btn small" id="btnPng">Baixar imagem com marcações</button>
+        </div>
+      </div>
+      <p style="margin:.4rem 0 14px;color:var(--muted);font-size:.9rem">Integra os achados de todas as fotos e do exame clínico, por prioridade: estruturação e suporte primeiro, refinamentos depois.</p>
+      <div class="grid two">
+        <div id="plan"></div>
+        <div>
+          <h3>Sequência clínica recomendada</h3>
+          <ol class="steps" id="seq"></ol>
+          <div class="note section"><b>Antes de indicar, confirmar:</b> gestação ou lactação, doenças autoimunes ou neuromusculares, infecção ou herpes ativo na área, alergias, uso de anticoagulantes, procedimentos e preenchedores anteriores (tipo e data), expectativas realistas. Registre as fotos padronizadas e o termo de consentimento.</div>
+          <div class="note section">Ferramenta de apoio baseada em fotografia 2D. Ângulo, lente, iluminação e expressão alteram as medidas. A indicação final depende do exame clínico (palpação, dinâmica muscular, qualidade de pele) e do julgamento do profissional habilitado.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// =====================================================================
+//  DEFINIÇÕES DE PONTOS
+// =====================================================================
+const FRONT_PTS = [
+  {id:'tri', name:'Tríquio', desc:'Centro da linha de implantação do cabelo'},
+  {id:'gla', name:'Glabela', desc:'Ponto entre as sobrancelhas, na linha média'},
+  {id:'puR', name:'Pupila D', desc:'Centro da pupila direita do paciente (esquerda da foto)'},
+  {id:'puL', name:'Pupila E', desc:'Centro da pupila esquerda do paciente (direita da foto)'},
+  {id:'clR', name:'Canto lateral D', desc:'Canto externo do olho direito'},
+  {id:'cmR', name:'Canto medial D', desc:'Canto interno do olho direito'},
+  {id:'cmL', name:'Canto medial E', desc:'Canto interno do olho esquerdo'},
+  {id:'clL', name:'Canto lateral E', desc:'Canto externo do olho esquerdo'},
+  {id:'brR', name:'Sobrancelha D', desc:'Ponto mais alto (ápice) da sobrancelha direita'},
+  {id:'brL', name:'Sobrancelha E', desc:'Ponto mais alto (ápice) da sobrancelha esquerda'},
+  {id:'zyR', name:'Zígio D', desc:'Ponto mais lateral da face (arco zigomático) à direita'},
+  {id:'zyL', name:'Zígio E', desc:'Ponto mais lateral da face à esquerda'},
+  {id:'alR', name:'Asa nasal D', desc:'Ponto mais lateral da asa do nariz, lado direito'},
+  {id:'alL', name:'Asa nasal E', desc:'Ponto mais lateral da asa do nariz, lado esquerdo'},
+  {id:'sn',  name:'Subnasal', desc:'Junção da columela com o lábio superior'},
+  {id:'ls',  name:'Lábio superior', desc:'Borda superior do vermelhão, no centro'},
+  {id:'st',  name:'Estômio', desc:'Contato entre os lábios, no centro'},
+  {id:'li',  name:'Lábio inferior', desc:'Borda inferior do vermelhão inferior, no centro'},
+  {id:'chR', name:'Comissura D', desc:'Canto da boca, lado direito'},
+  {id:'chL', name:'Comissura E', desc:'Canto da boca, lado esquerdo'},
+  {id:'goR', name:'Gônio D', desc:'Ângulo da mandíbula, lado direito'},
+  {id:'goL', name:'Gônio E', desc:'Ângulo da mandíbula, lado esquerdo'},
+  {id:'me',  name:'Mento', desc:'Ponto mais inferior do queixo, na linha média'},
+];
+const PROF_PTS = [
+  {id:'g',   name:'Glabela', desc:'Ponto mais proeminente da testa, na altura das sobrancelhas'},
+  {id:'n',   name:'Násio', desc:'Ponto mais profundo entre a testa e o dorso do nariz'},
+  {id:'prn', name:'Pronasal', desc:'Ponta do nariz (ponto mais anterior)'},
+  {id:'cm',  name:'Columela', desc:'Ponto da columela onde a tangente a partir do subnasal toca'},
+  {id:'sn',  name:'Subnasal', desc:'Ângulo entre a columela e o lábio superior'},
+  {id:'ls',  name:'Lábio superior', desc:'Ponto mais anterior do lábio superior'},
+  {id:'st',  name:'Estômio', desc:'Contato entre os lábios'},
+  {id:'li',  name:'Lábio inferior', desc:'Ponto mais anterior do lábio inferior'},
+  {id:'sm',  name:'Sulco mentolabial', desc:'Ponto mais profundo entre lábio inferior e mento'},
+  {id:'pg',  name:'Pogônio', desc:'Ponto mais anterior do mento'},
+  {id:'me',  name:'Mento', desc:'Ponto mais inferior do contorno do mento'},
+  {id:'c',   name:'Ponto cervical', desc:'Ponto mais profundo do ângulo entre submento e pescoço'},
+  {id:'nk',  name:'Pescoço', desc:'Ponto na linha anterior do pescoço, abaixo do ponto cervical'},
+  {id:'tr',  name:'Trágus', desc:'Cartilagem à frente do ouvido (opcional: plano de Frankfurt)', opt:true},
+  {id:'or',  name:'Orbitário', desc:'Ponto mais baixo da borda da órbita (opcional)', opt:true},
+];
+const DEFS = {front:FRONT_PTS, profile:PROF_PTS};
+const VIEW_NAME = {front:'Frontal', profile:'Perfil'};
+
+// =====================================================================
+//  ESTADO
+// =====================================================================
+const S = { slots:{front:null, profile:null}, active:null, drag:null, loupe:null, checks:new Set() };
+const $ = id => document.getElementById(id);
+const cv = $('cv'), ctx = cv.getContext('2d');
+const A = () => S.slots[S.active];
+function toast(msg){ const t=$('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),2800); }
+function busy(on,txt){ $('busy').classList.toggle('hidden',!on); if(txt) $('busyTxt').textContent=txt; }
+
+// geometria
+const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+const deg=r=>r*180/Math.PI;
+const mid=(a,b)=>({x:(a.x+b.x)/2,y:(a.y+b.y)/2});
+function rotate(p,ang,c){ const cs=Math.cos(ang), sn=Math.sin(ang), dx=p.x-c.x, dy=p.y-c.y; return {x:c.x+dx*cs-dy*sn, y:c.y+dx*sn+dy*cs}; }
+function angAt(a,b,c){ const ux=a.x-b.x,uy=a.y-b.y,vx=c.x-b.x,vy=c.y-b.y; const d=(ux*vx+uy*vy)/(Math.hypot(ux,uy)*Math.hypot(vx,vy)); return deg(Math.acos(Math.max(-1,Math.min(1,d)))); }
+// distância com sinal até a reta a→b (orientada de cima para baixo); positivo = lado anterior (x+)
+function sdist(p,a,b){ const vx=b.x-a.x,vy=b.y-a.y,wx=p.x-a.x,wy=p.y-a.y; return -(vx*wy-vy*wx)/Math.hypot(vx,vy); }
+const fmt=(n,d=1)=>n.toFixed(d).replace('.',',');
+const pt=x=>String(x).replace(/(\d)\.(\d)/g,'$1,$2');
+
+// =====================================================================
+//  UPLOAD
+// =====================================================================
+const drop=$('drop'), file=$('file');
+drop.addEventListener('click',e=>{ if(e.target.closest('button')) return; file.click(); });
+$('btnGal').onclick=e=>{ e.stopPropagation(); file.click(); };
+$('btnCam').onclick=e=>{ e.stopPropagation(); $('fileCam').click(); };
+$('fileCam').addEventListener('change',()=>{ const f=$('fileCam').files[0]; if(f) loadFile(f); $('fileCam').value=''; });
+drop.addEventListener('dragover',e=>{e.preventDefault();drop.classList.add('over')});
+drop.addEventListener('dragleave',()=>drop.classList.remove('over'));
+drop.addEventListener('drop',e=>{e.preventDefault();drop.classList.remove('over'); if(e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]);});
+file.addEventListener('change',()=>{ if(file.files[0]) loadFile(file.files[0]); file.value=''; });
+
+function makeWork(img,mirrored){
+  const max=1600, k=Math.min(1, max/Math.max(img.naturalWidth, img.naturalHeight));
+  const w=Math.round(img.naturalWidth*k), h=Math.round(img.naturalHeight*k);
+  const c=document.createElement('canvas'); c.width=w; c.height=h;
+  const g=c.getContext('2d'); if(mirrored){ g.translate(w,0); g.scale(-1,1); }
+  g.drawImage(img,0,0,w,h); return c;
+}
+function loadFile(f){
+  const im=new Image();
+  im.onload=async()=>{
+    const work=makeWork(im,false);
+    const slot={img:im, work, W:work.width, H:work.height, mirrored:false, pts:{}, cur:0, mesh:null, pose:null, flags:[], contour:null, result:null, view:null, scale:null, method:''};
+    $('work').classList.remove('hidden');
+    // mostra a foto enquanto detecta
+    cv.width=slot.W; cv.height=slot.H; ctx.drawImage(work,0,0);
+    busy(true,'Carregando o motor de detecção facial…');
+    $('work').scrollIntoView({behavior:'smooth'});
+    await autoDetect(slot, $('pView').value);
+    busy(false);
+  };
+  im.onerror=()=>toast('Não consegui abrir essa imagem. Tente JPG ou PNG.');
+  im.src=URL.createObjectURL(f);
+}
+
+// =====================================================================
+//  MOTOR DE DETECÇÃO (MediaPipe Face Landmarker, arquivos locais)
+// =====================================================================
+let ENGINE=null, ENGINE_ERR=null;
+async function getEngine(){
+  if(ENGINE) return ENGINE;
+  if(ENGINE_ERR) throw ENGINE_ERR;
+  const base=new URL('./', document.baseURI).href;
+  try{
+    const mod=await import(base+'vision_bundle.mjs');
+    const fs={wasmLoaderPath:base+'vision_wasm_internal.js', wasmBinaryPath:base+'vision_wasm_internal.wasm'};
+    // modelo embutido como base64 em um .js (carregado por <script>, aceito por qualquer hospedagem)
+    if(!window.__HOF_MODEL_B64) await new Promise((ok,err)=>{ const sc=document.createElement('script'); sc.src=base+'face_model.js'; sc.onload=ok; sc.onerror=()=>err(new Error('modelo não carregou')); document.head.appendChild(sc); });
+    const bin=atob(window.__HOF_MODEL_B64); const buf=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) buf[i]=bin.charCodeAt(i); window.__HOF_MODEL_B64=null;
+    const opts=d=>({baseOptions:{modelAssetBuffer:buf,delegate:d},runningMode:'IMAGE',numFaces:1,
+      minFaceDetectionConfidence:0.3,minFacePresenceConfidence:0.3,outputFacialTransformationMatrixes:true});
+    let lm; try{ lm=await mod.FaceLandmarker.createFromOptions(fs,opts('GPU')); }catch(e){ lm=await mod.FaceLandmarker.createFromOptions(fs,opts('CPU')); }
+    ENGINE=lm; return lm;
+  }catch(e){ ENGINE_ERR=e; throw e; }
+}
+function runMesh(slot){
+  const res=ENGINE.detect(slot.work);
+  if(!res.faceLandmarks||!res.faceLandmarks.length) return null;
+  const L=res.faceLandmarks[0].map(p=>({x:p.x*slot.W,y:p.y*slot.H,z:p.z*slot.W}));
+  let pose=null; const m=res.facialTransformationMatrixes&&res.facialTransformationMatrixes[0]&&res.facialTransformationMatrixes[0].data;
+  if(m){ pose={yaw:deg(Math.atan2(m[8],m[10])), pitch:deg(Math.asin(Math.max(-1,Math.min(1,-m[9])))), roll:deg(Math.atan2(m[1],m[5]))}; }
+  return {L,pose};
+}
+
+async function autoDetect(slot, forced){
+  slot.flags=[]; slot.method=''; slot.irisPx=null; slot.contour=null; slot.facing=null; slot.pose=null;
+  let mesh=null;
+  try{ busy(true,'Carregando o motor de detecção facial…'); await getEngine(); busy(true,'Detectando o rosto e 478 pontos…'); await new Promise(r=>setTimeout(r,30)); const r=runMesh(slot); if(r){ mesh=r.L; slot.pose=r.pose; } }
+  catch(e){ slot.flags.push('Motor de detecção indisponível neste navegador ('+(e.message||e)+').'); }
+  slot.mesh=mesh;
+  let view=forced!=='auto'?forced:null;
+  if(!view){
+    if(mesh && slot.pose) view=Math.abs(slot.pose.yaw)>=42?'profile':'front';
+    else if(mesh) view='front';
+    else view='profile'; // rosto não encontrado pelo modelo: perfis a 90° costumam falhar → tentar silhueta
+  }
+  slot.view=view; slot.pts={};
+  busy(true, view==='profile'?'Extraindo a silhueta do perfil…':'Refinando pontos anatômicos…');
+  await new Promise(r=>setTimeout(r,30));
+  let ok=false;
+  try{
+    if(view==='front'){ if(mesh){ mapFront(slot); ok=true; slot.method='Malha facial 3D (478 pontos) + refinamento por imagem'; } }
+    else { ok=detectProfile(slot); }
+  }catch(e){ console.error(e); slot.flags.push('Falha no refinamento: '+e.message); }
+  if(!ok && forced==='auto' && view==='profile' && !mesh){
+    // nem malha nem silhueta: provavelmente foto frontal sem detecção → marcação manual frontal
+    slot.view='front'; slot.pts={};
+  }
+  computeScale(slot);
+  const defs=DEFS[slot.view];
+  slot.cur=defs.findIndex(p=>!p.opt&&!slot.pts[p.id]); if(slot.cur<0) slot.cur=defs.length;
+  // substitui a foto anterior da mesma vista
+  S.slots[slot.view]=slot; S.active=slot.view;
+  cv.width=slot.W; cv.height=slot.H;
+  if(complete(slot)) analyzeAll(); else { slot.result=null; refreshResults(); }
+  updateUI(); render();
+  if(!ok) toast('Detecção automática não concluída: marque os pontos tocando na foto.');
+}
+function complete(slot){ return DEFS[slot.view].every(p=>p.opt||slot.pts[p.id]); }
+
+// =====================================================================
+//  FRONTAL: mapeamento da malha + refinamentos por análise de imagem
+// =====================================================================
+function mapFront(slot){
+  const L=slot.mesh, P={};
+  const g=i=>({x:L[i].x,y:L[i].y});
+  const sidePair=(a,b)=>{ const pa=g(a),pb=g(b); return pa.x<pb.x?[pa,pb]:[pb,pa]; }; // [direita do paciente (esq. da imagem), esquerda]
+  [[468,473,'pu'],[33,263,'cl'],[133,362,'cm'],[234,454,'zy'],[61,291,'ch']].forEach(([a,b,k])=>{ const [r,l]=sidePair(a,b); P[k+'R']=r; P[k+'L']=l; });
+  // sobrancelhas: ápice = ponto mais alto (perpendicular à linha bipupilar) do contorno superior
+  const roll=Math.atan2(P.puL.y-P.puR.y,P.puL.x-P.puR.x), c=mid(P.puR,P.puL);
+  const up=p=>rotate(p,-roll,c).y;
+  const browA=[70,63,105,66,107], browB=[300,293,334,296,336];
+  const apex=ids=>ids.map(g).reduce((b,p)=>up(p)<up(b)?p:b);
+  let bA=apex(browA), bB=apex(browB); if(bA.x>bB.x)[bA,bB]=[bB,bA]; P.brR=bA; P.brL=bB;
+  // asas nasais: ponto mais lateral do grupo alar
+  const alA=[48,64,98,102,129,219,235,240], alB=[278,294,327,331,358,439,455,460];
+  const ax=ids=>ids.map(g);
+  let gA=ax(alA), gB=ax(alB); if(gA[0].x>gB[0].x)[gA,gB]=[gB,gA];
+  P.alR=gA.reduce((b,p)=>p.x<b.x?p:b); P.alL=gB.reduce((b,p)=>p.x>b.x?p:b);
+  P.gla=g(9); P.sn=g(2); P.ls=g(0); P.st=mid(g(13),g(14)); P.li=g(17); P.me=g(152);
+  // gônio: vértice do contorno mandibular (maior distância da corda zígio→mento)
+  const chainA=[234,93,132,58,172,136,150,149,176,148,152], chainB=[454,323,361,288,397,365,379,378,400,377,152];
+  const corner=ch=>{ const a=g(ch[0]), b=g(ch[ch.length-1]); let best=null,bd=-1; for(let i=2;i<ch.length-2;i++){ const p=g(ch[i]); const d=Math.abs(sdist(p,a,b)); if(d>bd){bd=d;best=p;} }
+    // refino sub-malha: interpola entre vizinhos ponderando pela distância
+    return best; };
+  let gR=corner(chainA), gL=corner(chainB); if(gR.x>gL.x)[gR,gL]=[gL,gR]; P.goR=gR; P.goL=gL;
+  // tríquio: varredura de cor ao longo da linha média acima da testa (pele → cabelo)
+  P.tri=findHairline(slot, g(9), g(10), g(151));
+  slot.pts=P;
+  // escala pela íris (diâmetro horizontal médio)
+  const irisR=dist(g(469),g(471)), irisL=dist(g(474),g(476));
+  slot.irisPx=(irisR+irisL)/2;
+  if(slot.pose){
+    if(Math.abs(slot.pose.yaw)>15) slot.flags.push(`Foto oblíqua (rotação de ${fmt(Math.abs(slot.pose.yaw),0)}°): medidas horizontais e de simetria foram desativadas. Para avaliá-las, use uma foto frontal.`);
+    else if(Math.abs(slot.pose.yaw)>6) slot.flags.push(`Rosto girado ${fmt(Math.abs(slot.pose.yaw),0)}° para a ${slot.pose.yaw>0?'esquerda':'direita'} da foto: assimetrias horizontais podem estar exageradas.`);
+    if(Math.abs(slot.pose.pitch)>12) slot.flags.push(`Cabeça ${slot.pose.pitch>0?'inclinada para baixo':'elevada'} (~${fmt(Math.abs(slot.pose.pitch),0)}°): altera a proporção dos terços.`);
+  }
+  const gap=dist(g(13),g(14)), lipH=dist(g(0),g(17));
+  if(gap>0.18*lipH) slot.flags.push('Lábios entreabertos ou sorriso: as medidas de lábios e comissuras ficam distorcidas. Para elas, use uma foto com lábios relaxados em contato.');
+  const faceW=dist(P.zyR,P.zyL); if(faceW<220) slot.flags.push('Rosto pequeno na imagem (baixa resolução): aproxime a câmera para mais precisão.');
+}
+function findHairline(slot, gla, top, fore){
+  const g=slot.work.getContext('2d',{willReadFrequently:true});
+  const W=slot.W,H=slot.H;
+  const dx=top.x-gla.x, dy=top.y-gla.y, len=Math.hypot(dx,dy), ux=dx/len, uy=dy/len;
+  const patch=(x,y,r)=>{ const x0=Math.max(0,Math.round(x-r)), y0=Math.max(0,Math.round(y-r)); const w=Math.min(W-x0,2*r+1), h=Math.min(H-y0,2*r+1); if(w<=0||h<=0) return null;
+    const d=g.getImageData(x0,y0,w,h).data; let r_=0,g_=0,b_=0,n=0; for(let i=0;i<d.length;i+=4){r_+=d[i];g_+=d[i+1];b_+=d[i+2];n++;} return [r_/n,g_/n,b_/n]; };
+  const rad=Math.max(2,Math.round(len*0.05));
+  // cor de referência da pele: média entre glabela e topo da malha
+  const refs=[0.3,0.55,0.8].map(t=>patch(gla.x+dx*t,gla.y+dy*t,rad)).filter(Boolean);
+  const ref=refs.reduce((a,c)=>[a[0]+c[0]/refs.length,a[1]+c[1]/refs.length,a[2]+c[2]/refs.length],[0,0,0]);
+  const spread=Math.max(...refs.map(c=>Math.hypot(c[0]-ref[0],c[1]-ref[1],c[2]-ref[2])));
+  const T=Math.max(38, spread*3);
+  let run=0, first=null;
+  for(let s=0.75*len; s<3.2*len; s+=Math.max(1,len*0.02)){
+    const x=gla.x+ux*s, y=gla.y+uy*s; if(y<2) break;
+    const c=patch(x,y,rad); if(!c) break;
+    const lumRef=0.3*ref[0]+0.59*ref[1]+0.11*ref[2], lum=0.3*c[0]+0.59*c[1]+0.11*c[2];
+    const diff=Math.hypot(c[0]-ref[0],c[1]-ref[1],c[2]-ref[2]) + Math.max(0,lumRef-lum)*0.5;
+    if(diff>T){ run++; if(!first) first={x,y}; if(run>=4) return first; } else { run=0; first=null; }
+  }
+  slot.flags.push('Linha do cabelo não encontrada com segurança (calvície, franja ou cabelo claro): confira o tríquio.');
+  return {x:gla.x+ux*len*1.55, y:gla.y+uy*len*1.55};
+}
+
+// =====================================================================
+//  PERFIL: silhueta (segmentação + contorno) guiada pela malha quando houver
+// =====================================================================
+function detectProfile(slot){
+  const sil=extractSilhouette(slot);
+  if(!sil){ slot.flags.push('Não consegui separar o rosto do fundo: use fundo liso e contrastante, ou marque os pontos.'); return meshOnlyProfile(slot); }
+  const {C, facing}=sil; slot.facing=facing;
+  const a=p=>facing==='R'?p.x:-p.x; // coordenada anterior
+  const L=slot.mesh;
+  const y=i=>L[i].y;
+  // --- pronasal: ponto mais anterior na janela do nariz
+  const top=Math.min(...C.map(p=>p.y)), bot=Math.max(...C.map(p=>p.y));
+  let win = L ? [y(195)-0.02*slot.H, y(2)+0.02*slot.H] : [top+0.12*(bot-top), top+0.62*(bot-top)];
+  let iPrn=-1; C.forEach((p,i)=>{ if(p.y>=win[0]&&p.y<=win[1]&&(iPrn<0||a(p)>a(C[iPrn]))) iPrn=i; });
+  if(iPrn<0) return meshOnlyProfile(slot);
+  const prn=C[iPrn];
+  // altura de referência F (násio→mento)
+  let F = L ? Math.abs(y(152)-y(168)) : 0.78*(prn.y-top);
+  if(!(F>20)) F=0.78*(prn.y-top);
+  // segmentos superior e inferior percorrendo o contorno a partir do pronasal
+  const N=C.length, walk=(dir,stop)=>{ const out=[]; for(let k=0;k<N*0.7;k++){ const p=C[(iPrn+dir*k+N*4)%N]; out.push(p); if(stop(p)) break; } return out; };
+  const stop=p=>Math.abs(p.y-prn.y)>1.45*F || a(p)<a(prn)-0.85*F; let s1=walk(1,stop), s2=walk(-1,stop);
+  // descobre qual é o de baixo
+  const meanY=s=>s.slice(5,60).reduce((t,p)=>t+p.y,0)/Math.max(1,Math.min(55,s.length-5));
+  let down=meanY(s1)>meanY(s2)?s1:s2, up=down===s1?s2:s1;
+  up=up.filter(p=>p.y>=prn.y-1.2*F); down=down.filter(p=>p.y<=prn.y+1.45*F);
+  const pick=(seg,y0,y1,mode)=>{ let b=null; for(const p of seg){ if(p.y<y0||p.y>y1) continue; if(!b|| (mode==='max'?a(p)>a(b):a(p)<a(b))) b=p; } return b; };
+  // priores verticais (da malha, ou proporções médias quando não houver malha)
+  const prior = (id)=>{
+    if(L){ const m={n9:y(9),n195:y(195),p2:y(2),p0:y(0),p13:y(13),p14:y(14),p17:y(17),p200:y(200),p199:y(199),p152:y(152)}; return m[id]; }
+    const f={n9:-0.47,n195:-0.17,p2:0.09,p0:0.16,p13:0.25,p14:0.27,p17:0.34,p200:0.43,p199:0.5,p152:0.62}[id]; return prn.y+f*F;
+  };
+  let P={prn};
+  const lower=()=>{
+    P.sn = pick(down, prn.y+0.01*F, Math.max(prior('p0'),prn.y+0.1*F), 'min');
+    if(!P.sn) return false;
+    P.ls = pick(down, P.sn.y, prior('p13')+0.02*F, 'max');
+    P.st = pick(down, P.ls.y, prior('p17'), 'min');
+    P.li = pick(down, P.st.y, prior('p200'), 'max');
+    P.sm = pick(down, P.li.y, prior('p199')+0.02*F, 'min');
+    P.pg = pick(down, P.sm.y, prior('p152')+0.03*F, 'max');
+    return P.ls&&P.st&&P.li&&P.sm&&P.pg;
+  };
+  if(!lower()) return meshOnlyProfile(slot);
+  P.n = pick(up, prior('n9')-0.05*F, prior('n195'), 'min');
+  if(!P.n) return meshOnlyProfile(slot);
+  P.g = pick(up, P.n.y-0.32*F, P.n.y-0.03*F, 'max') || {x:P.n.x,y:P.n.y-0.12*F};
+  if(!L){ // reestima F pela própria anatomia detectada e repete a busca inferior
+    const F2=(P.pg.y-P.n.y)/0.88; if(F2>20&&Math.abs(F2-F)/F>0.08){ F=F2; lower(); }
+  }
+  // columela: tangente a partir do subnasal ao contorno inferior do nariz
+  const iSn=down.indexOf(P.sn); let best=null,bs=-1e9;
+  for(let i=0;i<iSn;i++){ const p=down[i]; const da=a(p)-a(P.sn); if(da<0.02*F) continue; const sl=(p.y-P.sn.y)/da; if(sl>bs){bs=sl;best=p;} }
+  P.cm = best || mid(P.prn,P.sn);
+  // mento, ponto cervical e pescoço (método da corda sobre o contorno 2D)
+  const iPg=down.indexOf(P.pg);
+  let iK=down.findIndex((p,i)=>i>iPg && p.y>=P.pg.y+0.55*F); if(iK<0) iK=down.length-1;
+  const toA=p=>({x:a(p),y:p.y});
+  let iC=-1, dmin=1e9; for(let i=iPg+1;i<iK;i++){ const d=sdist(toA(down[i]),toA(P.pg),toA(down[iK])); if(d<dmin){dmin=d;iC=i;} }
+  if(iC<0){ slot.flags.push('Contorno do pescoço não encontrado: marque mento, ponto cervical e pescoço.'); }
+  else{
+    P.c=down[iC];
+    let iMe=-1, dmax=-1e9; for(let i=iPg+1;i<iC;i++){ const d=sdist(toA(down[i]),toA(P.pg),toA(P.c)); if(d>dmax){dmax=d;iMe=i;} }
+    P.me = iMe>=0?down[iMe]:mid(P.pg,P.c);
+    const iN=down.findIndex((p,i)=>i>iC && p.y>=P.c.y+0.28*F); P.nk = down[iN>=0?iN:iK];
+  }
+  // trágus e orbitário pela malha (lado visível = mais próximo da câmera)
+  if(L){
+    const vis = L[234].z < L[454].z ? 0 : 1;
+    P.tr = {x:L[[234,454][vis]].x, y:L[[234,454][vis]].y};
+    P.or = {x:L[[230,450][vis]].x, y:L[[230,450][vis]].y};
+    slot.flags.push('Trágus e orbitário estimados pela malha: confira se for usar o plano de Frankfurt.');
+    const iris = vis===0 ? dist(L[470],L[472]) : dist(L[475],L[477]);
+    if(iris>4) slot.irisPx=iris;
+  }
+  // sanidade: ordem vertical
+  const ord=['n','prn','sn','ls','st','li','sm','pg'];
+  for(let i=1;i<ord.length;i++) if(!(P[ord[i]].y>P[ord[i-1]].y-1)){ slot.flags.push('Ordem anatômica inconsistente na detecção: confira os pontos do terço inferior.'); break; }
+  if(a(P.prn)-a(P.sn) < 0.05*F) slot.flags.push('Projeção nasal muito baixa detectada: verifique se a silhueta está correta.');
+  for(const k in P) if(P[k]) P[k]={x:P[k].x,y:P[k].y};
+  slot.pts=P; slot.contour={up, down, facing};
+  slot.method = L ? 'Silhueta do perfil guiada pela malha facial 3D' : 'Silhueta do perfil (análise de contorno)';
+  return true;
+}
+function meshOnlyProfile(slot){
+  const L=slot.mesh; if(!L) return false;
+  const g=i=>({x:L[i].x,y:L[i].y});
+  slot.pts={g:g(9), n:g(168), prn:g(1), cm:mid(g(1),g(2)), sn:g(2), ls:g(0), st:mid(g(13),g(14)), li:g(17), sm:g(18), pg:g(199), me:g(152)};
+  slot.facing = L[1].x > (L[234].x+L[454].x)/2 ? 'R':'L';
+  slot.flags.push('Perfil estimado só pela malha (sem silhueta): marque ponto cervical e pescoço e confira os demais.');
+  slot.method='Malha facial 3D (sem silhueta)';
+  return false;
+}
+function extractSilhouette(slot){
+  const maxH=760, k=Math.min(1,maxH/slot.H), w=Math.round(slot.W*k), h=Math.round(slot.H*k);
+  const c=document.createElement('canvas'); c.width=w; c.height=h; const g=c.getContext('2d',{willReadFrequently:true});
+  g.drawImage(slot.work,0,0,w,h); const D=g.getImageData(0,0,w,h).data;
+  // cor do fundo: mediana das bordas (topo e laterais)
+  const sm=[]; const push=(x,y)=>{const i=(y*w+x)*4; sm.push([D[i],D[i+1],D[i+2]]);};
+  for(let x=0;x<w;x+=2){ push(x,0); push(x,1); }
+  for(let y=0;y<h*0.7;y+=2){ push(0,y); push(1,y); push(w-1,y); push(w-2,y); }
+  const med=j=>{ const v=sm.map(s=>s[j]).sort((p,q)=>p-q); return v[v.length>>1]; };
+  const bg=[med(0),med(1),med(2)];
+  const bgVar = sm.reduce((t,s)=>t+Math.hypot(s[0]-bg[0],s[1]-bg[1],s[2]-bg[2]),0)/sm.length;
+  const d=new Float32Array(w*h); const hist=new Uint32Array(256);
+  for(let i=0,j=0;i<D.length;i+=4,j++){ const v=Math.min(255,Math.hypot(D[i]-bg[0],(D[i+1]-bg[1])*1.15,D[i+2]-bg[2])); d[j]=v; hist[v|0]++; }
+  // limiar de Otsu
+  let sum=0,tot=w*h; for(let i=0;i<256;i++) sum+=i*hist[i];
+  let sB=0,wB=0,best=0,thr=40; for(let i=0;i<256;i++){ wB+=hist[i]; if(!wB) continue; const wF=tot-wB; if(!wF) break; sB+=i*hist[i]; const mB=sB/wB, mF=(sum-sB)/wF; const v=wB*wF*(mB-mF)*(mB-mF); if(v>best){best=v;thr=i;} }
+  thr=Math.max(thr, 22, bgVar*2.2);
+  let m=new Uint8Array(w*h); for(let j=0;j<m.length;j++) m[j]=d[j]>thr?1:0;
+  // suavização por maioria 3x3 (2 passes)
+  for(let pass=0;pass<2;pass++){ const n=new Uint8Array(w*h); for(let yy=1;yy<h-1;yy++) for(let xx=1;xx<w-1;xx++){ let s=0; for(let oy=-1;oy<=1;oy++) for(let ox=-1;ox<=1;ox++) s+=m[(yy+oy)*w+xx+ox]; n[yy*w+xx]=s>=5?1:0; } m=n; }
+  // maior componente conectado
+  const lab=new Int32Array(w*h); let bestLab=0,bestN=0,cur=0; const st=new Int32Array(w*h);
+  for(let j=0;j<m.length;j++){ if(!m[j]||lab[j]) continue; cur++; let sp=0,cnt=0; st[sp++]=j; lab[j]=cur;
+    while(sp){ const q=st[--sp]; cnt++; const x=q%w, yq=(q/w)|0; const nb=[x>0?q-1:-1, x<w-1?q+1:-1, yq>0?q-w:-1, yq<h-1?q+w:-1]; for(const r of nb){ if(r>=0&&m[r]&&!lab[r]){lab[r]=cur;st[sp++]=r;} } }
+    if(cnt>bestN){bestN=cnt;bestLab=cur;} }
+  if(bestN < w*h*0.04) return null;
+  for(let j=0;j<m.length;j++) m[j]=lab[j]===bestLab?1:0;
+  // preenche buracos
+  const out=new Uint8Array(w*h); let sp=0; const seed=j=>{ if(!m[j]&&!out[j]){out[j]=1;st[sp++]=j;} };
+  for(let x=0;x<w;x++){ seed(x); seed((h-1)*w+x); } for(let yy=0;yy<h;yy++){ seed(yy*w); seed(yy*w+w-1); }
+  while(sp){ const q=st[--sp]; const x=q%w, yq=(q/w)|0; if(x>0) seed(q-1); if(x<w-1) seed(q+1); if(yq>0) seed(q-w); if(yq<h-1) seed(q+w); }
+  for(let j=0;j<m.length;j++) m[j]=out[j]?0:1;
+  // direção do rosto: lado com maior protuberância (nariz) no terço superior da silhueta
+  let y0=h,y1=0; for(let yy=0;yy<h;yy++) for(let xx=0;xx<w;xx++) if(m[yy*w+xx]){ if(yy<y0)y0=yy; if(yy>y1)y1=yy; break; }
+  const rows=[]; for(let yy=y0;yy<=y1;yy++){ let l=-1,r=-1; for(let xx=0;xx<w;xx++) if(m[yy*w+xx]){l=xx;break;} for(let xx=w-1;xx>=0;xx--) if(m[yy*w+xx]){r=xx;break;} rows.push({y:yy,l,r}); }
+  const bump=side=>{ const v=rows.map(o=>side==='R'?o.r:-o.l); const n=v.length, wnd=Math.max(5,Math.round(n*0.07)); let mx=0; for(let i=Math.round(n*0.1);i<Math.round(n*0.7);i++){ if(v[i]<-1e8) continue; const lo=v.slice(Math.max(0,i-wnd),i+wnd).sort((p,q)=>p-q); const md=lo[lo.length>>1]; mx=Math.max(mx,v[i]-md); } return mx; };
+  let facing;
+  if(slot.mesh){ const L=slot.mesh; facing = L[1].x > (L[234].x+L[454].x)/2 ? 'R':'L'; }
+  else facing = bump('R')>=bump('L')?'R':'L';
+  // contorno (Moore) do componente
+  const C=trace(m,w,h); if(!C||C.length<100) return null;
+  // suavização leve ao longo do contorno
+  const sC=C.map((p,i)=>{ let sx=0,sy=0,n=0; for(let o=-2;o<=2;o++){ const q=C[(i+o+C.length)%C.length]; sx+=q[0]; sy+=q[1]; n++; } return {x:(sx/n+0.5)/k, y:(sy/n+0.5)/k}; });
+  slot.silMask={m,w,h,k};
+  return {C:sC, facing};
+}
+function trace(m,w,h){
+  let s=-1; for(let j=0;j<m.length;j++) if(m[j]){s=j;break;} if(s<0) return null;
+  const D=[[-1,0],[-1,-1],[0,-1],[1,-1],[1,0],[1,1],[0,1],[-1,1]];
+  const at=(x,y)=>x>=0&&y>=0&&x<w&&y<h&&m[y*w+x];
+  let px=s%w, py=(s/w)|0, bd=0; const sx=px, sy=py; const out=[[px,py]];
+  for(let it=0; it<w*h; it++){
+    let found=false;
+    for(let k=1;k<=8;k++){ const nd=(bd+k)%8, nx=px+D[nd][0], ny=py+D[nd][1];
+      if(at(nx,ny)){ const bx=px+D[(bd+k-1)%8][0], by=py+D[(bd+k-1)%8][1]; px=nx; py=ny; bd=D.findIndex(d=>d[0]===bx-px&&d[1]===by-py); if(bd<0) bd=0; found=true; break; } }
+    if(!found) break;
+    if(px===sx&&py===sy) break;
+    out.push([px,py]);
+  }
+  return out;
+}
+
+// =====================================================================
+//  ESCALA (mm/pixel)
+// =====================================================================
+function computeScale(slot){
+  const ipd=parseFloat($('pIpd').value), P=slot.pts;
+  if(slot.view==='front'){
+    if(ipd>40 && P.puR && P.puL){ slot.scale={s:ipd/dist(P.puR,P.puL), src:`DIP informada (${pt(ipd)} mm)`}; return; }
+    if(slot.irisPx>4){ slot.scale={s:11.7/slot.irisPx, src:'diâmetro da íris (11,7 mm)'}; return; }
+    if(P.puR&&P.puL){ slot.scale={s:63/dist(P.puR,P.puL), src:'DIP média de 63 mm (estimativa)'}; return; }
+  } else {
+    if(slot.irisPx>4){ slot.scale={s:11.7/slot.irisPx, src:'altura da íris visível (11,7 mm)'}; return; }
+    if(P.n&&P.me){ const ref=$('pSex').value==='F'?118:126; slot.scale={s:ref/dist(P.n,P.me), src:`altura N–Me média de ${ref} mm (estimativa)`}; return; }
+  }
+  slot.scale={s:0.25, src:'indefinida'};
+}
+
+// =====================================================================
+//  DESENHO
+// =====================================================================
+function lineW(){ // espessura proporcional ao tamanho do rosto na imagem
+  const s=A(), P=s.pts; let ref=s.W/700;
+  if(s.view==='front'&&P.puR&&P.puL) ref=dist(P.puR,P.puL)/42;
+  else if(s.view==='profile'&&P.n&&P.me) ref=dist(P.n,P.me)/120;
+  return Math.max(1, Math.min(ref, s.W/250));
+}
+function render(){
+  const s=A(); if(!s) return;
+  ctx.setTransform(1,0,0,1,0,0); ctx.clearRect(0,0,s.W,s.H); ctx.drawImage(s.work,0,0);
+  const lw=lineW();
+  if(s.result && $('tgGuides').checked) (s.view==='front'?drawFrontGuides:drawProfileGuides)(s,lw);
+  const defs=DEFS[s.view];
+  if($('tgPts').checked || !s.result) defs.forEach((p,i)=>{
+    const q=s.pts[p.id]; if(!q) return;
+    ctx.beginPath(); ctx.arc(q.x,q.y,lw*2.8,0,Math.PI*2);
+    ctx.fillStyle=(S.drag===p.id)?'#ffd166':'#ffffff'; ctx.fill(); ctx.lineWidth=lw; ctx.strokeStyle='#8b5e48'; ctx.stroke();
+    if($('tgLabels').checked || !s.result){ const label=$('tgLabels').checked?p.name:String(i+1);
+      ctx.font=`600 ${Math.round(lw*7)}px DM Sans, sans-serif`; ctx.lineWidth=lw*2.2; ctx.strokeStyle='rgba(0,0,0,.65)';
+      ctx.strokeText(label,q.x+lw*4.5,q.y-lw*3.5); ctx.fillStyle='#fff'; ctx.fillText(label,q.x+lw*4.5,q.y-lw*3.5); }
+  });
+  if(s.result && $('tgIssues').checked) drawIssues(s,lw);
+  if(S.loupe) drawLoupe(s,S.loupe);
+}
+function line(a,b,col,w,dash){ ctx.save(); if(dash) ctx.setLineDash(dash); ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.strokeStyle=col; ctx.lineWidth=w; ctx.stroke(); ctx.restore(); }
+function label(txt,p,col,lw,align){ ctx.font=`600 ${Math.round(lw*7.5)}px DM Sans, sans-serif`; const w=ctx.measureText(txt).width; const x=align==='left'?p.x-w:p.x;
+  ctx.lineWidth=lw*2.4; ctx.strokeStyle='rgba(0,0,0,.72)'; ctx.strokeText(txt,x,p.y); ctx.fillStyle=col; ctx.fillText(txt,x,p.y); }
+function sevColor(s){ return s==='bad'?'#ff6b5e':s==='warn'?'#ffbe55':'#5fd39a'; }
+function drawFrontGuides(s,lw){
+  const r=s.result, P=s.pts, back=q=>rotate(q,r.angle,r.center);
+  if(!r.oblique){ line(back({x:r.midX,y:r.fr.tri.y-s.H*0.04}),back({x:r.midX,y:r.fr.me.y+s.H*0.03}),'rgba(255,255,255,.85)',lw,[lw*6,lw*4]); line(P.puR,P.puL,'rgba(255,255,255,.5)',lw*0.8); }
+  const xs=[Math.min(r.fr.zyR.x,r.fr.zyL.x)-s.W*0.03, Math.max(r.fr.zyR.x,r.fr.zyL.x)+s.W*0.03];
+  ['tri','gla','sn','me'].forEach(k=>line(back({x:xs[0],y:r.fr[k].y}),back({x:xs[1],y:r.fr[k].y}),'rgba(255,214,102,.85)',lw));
+  [['Sup.',r.fr.tri.y,r.fr.gla.y,r.thirds.sup],['Méd.',r.fr.gla.y,r.fr.sn.y,r.thirds.med],['Inf.',r.fr.sn.y,r.fr.me.y,r.thirds.inf]].forEach(([n,y1,y2,v])=>label(`${n} ${fmt(v,0)}%`,back({x:xs[0]+lw*2,y:(y1+y2)/2}),'#ffd166',lw));
+  if(!r.oblique) r.pairs.forEach(pr=>line(P[pr.r],P[pr.l],sevColor(pr.sev),lw*1.2));
+}
+function drawProfileGuides(s,lw){
+  const r=s.result, P=s.pts;
+  if(s.contour){ ctx.save(); ctx.globalAlpha=.55; ctx.strokeStyle='#7fd1ff'; ctx.lineWidth=lw*0.8; ctx.beginPath(); const seg=[...s.contour.up.slice().reverse(),...s.contour.down]; seg.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y)); ctx.stroke(); ctx.restore(); }
+  const ext=(a,b,t)=>({x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t});
+  // Linha E
+  line(ext(P.prn,P.pg,-0.15),ext(P.prn,P.pg,1.15),'#ff9ad5',lw*1.1); label('Linha E',ext(P.prn,P.pg,1.18),'#ff9ad5',lw);
+  // ângulos
+  const arm=(v,a,col,txt)=>{ line(v,a[0],col,lw); line(v,a[1],col,lw); label(txt,{x:v.x+(s.facing==='L'?-lw*8:lw*6),y:v.y+lw*3},col,lw,s.facing==='L'?'left':null); };
+  arm(P.sn,[P.cm,P.ls],'#ffd166',`${fmt(r.m.nasolabial,0)}°`);
+  arm(P.n,[P.g,P.prn],'#a0e7a0',`${fmt(r.m.nasofrontal,0)}°`);
+  line(P.g,P.sn,'rgba(255,255,255,.7)',lw*0.8,[lw*5,lw*4]); line(P.sn,P.pg,'rgba(255,255,255,.7)',lw*0.8,[lw*5,lw*4]);
+  label(`${fmt(r.m.convex,0)}°`,{x:P.sn.x+(s.facing==='L'?lw*6:-lw*8),y:P.sn.y-lw*6},'#fff',lw,s.facing==='L'?null:'left');
+  arm(P.sm,[P.li,P.pg],'#c3a6ff',`${fmt(r.m.mentolabial,0)}°`);
+  if(P.c&&P.me&&P.nk) arm(P.c,[P.me,P.nk],'#7fd1ff',`${fmt(r.m.cervicomental,0)}°`);
+  if(r.fh&&P.tr&&P.or){ line(P.tr,ext(P.tr,P.or,1.6),'rgba(255,255,255,.55)',lw*0.8,[lw*3,lw*3]);
+    const ux=P.or.x-P.tr.x, uy=P.or.y-P.tr.y, ul=Math.hypot(ux,uy); let px=-uy/ul, py=ux/ul; if(py<0){px=-px;py=-py;} const L=dist(P.n,P.me)*1.1;
+    line({x:P.n.x-px*L*0.1,y:P.n.y-py*L*0.1},{x:P.n.x+px*L,y:P.n.y+py*L},'rgba(255,255,255,.8)',lw*0.9,[lw*6,lw*4]); label('Meridiano 0',{x:P.n.x+px*L,y:P.n.y+py*L+lw*9},'#fff',lw); }
+}
+function drawIssues(s,lw){
+  const defs=s.result.findings.filter(f=>f.sev==='warn'||f.sev==='bad');
+  defs.forEach((f,i)=>{ (f.at||[]).forEach(an=>{
+    const ids=Array.isArray(an)?an:[an]; const ps=ids.map(k=>s.pts[k]).filter(Boolean); if(!ps.length) return;
+    const p={x:ps.reduce((t,q)=>t+q.x,0)/ps.length, y:ps.reduce((t,q)=>t+q.y,0)/ps.length};
+    const R=lw*5.5, col=f.sev==='bad'?'#d9473c':'#e69a1e';
+    ctx.save(); ctx.globalAlpha=.22; ctx.beginPath(); ctx.arc(p.x,p.y,R*1.7,0,Math.PI*2); ctx.fillStyle=col; ctx.fill(); ctx.restore();
+    ctx.beginPath(); ctx.arc(p.x,p.y,R*1.7,0,Math.PI*2); ctx.strokeStyle=col; ctx.lineWidth=lw*1.2; ctx.setLineDash([lw*3,lw*2]); ctx.stroke(); ctx.setLineDash([]);
+    const bx=p.x+R*1.8, by=p.y-R*1.8;
+    ctx.beginPath(); ctx.arc(bx,by,R,0,Math.PI*2); ctx.fillStyle=col; ctx.fill(); ctx.lineWidth=lw; ctx.strokeStyle='#fff'; ctx.stroke();
+    ctx.font=`700 ${Math.round(R*1.15)}px DM Sans, sans-serif`; ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(String(i+1),bx,by+0.5); ctx.textAlign='start'; ctx.textBaseline='alphabetic';
+  }); });
+}
+function drawLoupe(s,p){
+  const R=Math.round(Math.min(s.W,s.H)*0.17), z=2.6, lw=lineW();
+  const cx=p.x<s.W/2?s.W-R-12:R+12, cy=R+12;
+  ctx.save(); ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.clip();
+  ctx.fillStyle='#000'; ctx.fillRect(cx-R,cy-R,2*R,2*R);
+  ctx.drawImage(s.work,p.x-R/z,p.y-R/z,2*R/z,2*R/z,cx-R,cy-R,2*R,2*R);
+  ctx.strokeStyle='#ffd166'; ctx.lineWidth=lw; ctx.beginPath(); ctx.moveTo(cx-R*.25,cy); ctx.lineTo(cx+R*.25,cy); ctx.moveTo(cx,cy-R*.25); ctx.lineTo(cx,cy+R*.25); ctx.stroke();
+  ctx.restore(); ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.lineWidth=lw*2; ctx.strokeStyle='#fff'; ctx.stroke();
+}
+
+// =====================================================================
+//  INTERAÇÃO
+// =====================================================================
+function evPt(e){ const s=A(), r=cv.getBoundingClientRect(); return {x:(e.clientX-r.left)*s.W/r.width, y:(e.clientY-r.top)*s.H/r.height}; }
+function nearest(p){ const s=A(), r=cv.getBoundingClientRect(), tol=26*s.W/r.width; let best=null,bd=tol; for(const k in s.pts){ const d=dist(s.pts[k],p); if(d<bd){bd=d;best=k;} } return best; }
+cv.addEventListener('pointerdown',e=>{
+  const s=A(); if(!s) return; e.preventDefault(); cv.setPointerCapture(e.pointerId);
+  const p=evPt(e), defs=DEFS[s.view];
+  if(s.cur>=defs.length){ const n=nearest(p); if(n){ S.drag=n; S.loupe=p; render(); } return; }
+  const id=defs[s.cur].id; s.pts[id]=p; S.drag=id; S.loupe=p; advance(); render();
+});
+cv.addEventListener('pointermove',e=>{ if(!S.drag) return; e.preventDefault(); const s=A(); const p=evPt(e); p.x=Math.max(0,Math.min(s.W,p.x)); p.y=Math.max(0,Math.min(s.H,p.y)); s.pts[S.drag]=p; S.loupe=p; if(s.result) analyzeAll(); else render(); });
+const endDrag=()=>{ if(!S.drag) return; S.drag=null; S.loupe=null; const s=A(); if(complete(s)) analyzeAll(); render(); updateUI(); };
+cv.addEventListener('pointerup',endDrag); cv.addEventListener('pointercancel',endDrag);
+function advance(){ const s=A(), defs=DEFS[s.view]; while(s.cur<defs.length && s.pts[defs[s.cur].id]) s.cur++; updateUI(); }
+
+function updateUI(){
+  const s=A(); if(!s) return;
+  const defs=DEFS[s.view], n=defs.filter(p=>s.pts[p.id]).length, req=defs.filter(p=>!p.opt).length;
+  $('tabs').innerHTML=['front','profile'].map(v=>`<button class="tab ${S.active===v?'on':''}" data-v="${v}">${VIEW_NAME[v]}${S.slots[v]?(S.slots[v].result?'<span class="dot"></span>':''):' · sem foto'}</button>`).join('');
+  $('ptsTitle').textContent=`3. Pontos anatômicos · ${VIEW_NAME[s.view]}`;
+  $('prog').style.width=(n/defs.length*100)+'%';
+  const done=s.cur>=defs.length;
+  if(done){ $('gNum').textContent='✓'; $('gName').textContent= complete(s)?'Pontos completos':'Faltam pontos obrigatórios'; $('gDesc').textContent='Arraste qualquer ponto para refinar: a análise se atualiza na hora.'; }
+  else { const p=defs[s.cur]; $('gNum').textContent=s.cur+1; $('gName').textContent=p.name+(p.opt?' (opcional)':''); $('gDesc').textContent=p.desc; }
+  $('btnSkip').classList.toggle('hidden', done || !defs[s.cur].opt);
+  $('plist').innerHTML=defs.map((p,i)=>`<span class="${s.pts[p.id]?'done':(i===s.cur?'cur':'')} ${p.opt?'opt':''}">${i+1}. ${p.name}</span>`).join('');
+  const pose=s.pose?`<span class="chip info">rotação ${fmt(s.pose.yaw,0)}° · inclinação ${fmt(s.pose.pitch,0)}° · giro ${fmt(s.pose.roll,0)}°</span>`:'';
+  const meth=s.method?`<span class="chip ok">${s.method}</span>`:`<span class="chip warn">Marcação manual</span>`;
+  const sc=s.scale?`<span class="chip info">Escala: ${s.scale.src}</span>`:'';
+  $('status').innerHTML=`<b>Vista: ${VIEW_NAME[s.view]}${s.view==='profile'&&s.facing?` (voltado para a ${s.facing==='R'?'direita':'esquerda'})`:''}${s.view==='front'&&s.pose&&Math.abs(s.pose.yaw)>15?' · oblíqua (¾)':''}</b><div class="meta">${meth}${pose}${sc}</div>`+
+    (s.flags.length?`<div style="margin-top:8px">${s.flags.map(f=>`<div class="find info" style="margin-bottom:6px"><small style="color:var(--ink)">${f}</small></div>`).join('')}</div>`:'');
+  $('btnMirror').classList.toggle('hidden', s.view!=='front');
+}
+$('tabs').addEventListener('click',e=>{ const v=e.target.closest('.tab')?.dataset.v; if(!v) return;
+  if(!S.slots[v]){ $('pView').value=v; toast(`Envie a foto de ${VIEW_NAME[v].toLowerCase()}`); file.click(); return; }
+  S.active=v; const s=A(); cv.width=s.W; cv.height=s.H; updateUI(); render(); });
+$('btnUndo').onclick=()=>{ const s=A(), defs=DEFS[s.view]; for(let i=defs.length-1;i>=0;i--) if(s.pts[defs[i].id]){ delete s.pts[defs[i].id]; s.cur=i; break; } s.result=null; refreshResults(); updateUI(); render(); };
+$('btnManual').onclick=()=>{ const s=A(); s.pts={}; s.cur=0; s.result=null; s.contour=null; s.method=''; refreshResults(); updateUI(); render(); toast('Toque na foto para marcar cada ponto'); };
+$('btnSkip').onclick=()=>{ const s=A(), defs=DEFS[s.view]; s.cur++; advance(); if(complete(s)) analyzeAll(); render(); };
+$('btnAuto').onclick=async()=>{ const s=A(); if(!s) return; busy(true); await autoDetect(Object.assign(s,{}), s.view); busy(false); };
+$('btnSwap').onclick=async()=>{ const s=A(); if(!s) return; const to=s.view==='front'?'profile':'front'; S.slots[s.view]=null; busy(true); await autoDetect(s,to); busy(false); };
+$('btnMirror').onclick=()=>{ const s=A(); if(!s) return; s.mirrored=!s.mirrored; s.work=makeWork(s.img,s.mirrored);
+  const sw={}; for(const k in s.pts){ const p={x:s.W-s.pts[k].x,y:s.pts[k].y}; const m=k.match(/^(.*)([RL])$/); sw[m?m[1]+(m[2]==='R'?'L':'R'):k]=p; } s.pts=sw;
+  if(s.mesh) s.mesh=s.mesh.map(p=>({x:s.W-p.x,y:p.y,z:p.z}));
+  if(complete(s)) analyzeAll(); render(); toast(s.mirrored?'Foto espelhada':'Espelhamento desfeito'); };
+['tgIssues','tgGuides','tgPts','tgLabels'].forEach(id=>$(id).addEventListener('change',render));
+$('btnReset').onclick=()=>{ S.slots={front:null,profile:null}; S.active=null; S.checks.clear(); document.querySelectorAll('#checklist input').forEach(i=>i.checked=false); $('pName').value=''; ['work','results'].forEach(i=>$(i).classList.add('hidden')); window.scrollTo({top:0,behavior:'smooth'}); };
+$('pSex').addEventListener('change',()=>{ for(const v in S.slots) if(S.slots[v]) computeScale(S.slots[v]); analyzeAll(); });
+$('pIpd').addEventListener('change',()=>{ for(const v in S.slots) if(S.slots[v]) computeScale(S.slots[v]); analyzeAll(); });
+
+// =====================================================================
+//  ANÁLISE FRONTAL
+// =====================================================================
+function analyzeFront(slot, sex){
+  const P=slot.pts, s=slot.scale.s, oblique=slot.pose?Math.abs(slot.pose.yaw)>15:false;
+  const ang=Math.atan2(P.puL.y-P.puR.y, P.puL.x-P.puR.x), c=mid(P.puR,P.puL);
+  const fr={}; for(const k in P) fr[k]=rotate(P[k],-ang,c);
+  const midX=(fr.gla.x+fr.sn.x+(fr.cmR.x+fr.cmL.x)/2)/3;
+  const out={angle:ang,center:c,fr,midX,s,oblique,metrics:[],findings:[],tags:new Set(),pairs:[],warnings:[]};
+  const M=(group,name,val,ref,sev,hint)=>out.metrics.push({group,name,val:pt(val),ref:pt(ref),sev,hint});
+  const F=(sev,title,detail,tags,at)=>{ out.findings.push({sev,title,detail:pt(detail),at}); (tags||[]).forEach(t=>out.tags.add(t)); };
+  const tilt=deg(ang); if(Math.abs(tilt)>3) out.warnings.push(`Cabeça inclinada ${fmt(Math.abs(tilt))}° (corrigido no cálculo).`);
+  // terços
+  const sup=fr.gla.y-fr.tri.y, med=fr.sn.y-fr.gla.y, inf=fr.me.y-fr.sn.y, tot=sup+med+inf;
+  out.thirds={sup:sup/tot*100, med:med/tot*100, inf:inf/tot*100};
+  const tS=v=>Math.abs(v-33.3)<=3?'ok':Math.abs(v-33.3)<=6?'warn':'bad';
+  M('Proporções verticais','Terço superior',`${fmt(out.thirds.sup)}%`,'33%',tS(out.thirds.sup));
+  M('Proporções verticais','Terço médio',`${fmt(out.thirds.med)}%`,'33%',tS(out.thirds.med));
+  M('Proporções verticais','Terço inferior',`${fmt(out.thirds.inf)}%`,'33%',tS(out.thirds.inf));
+  if(out.thirds.inf<30) F(out.thirds.inf<27.5?'bad':'warn','Terço inferior reduzido',`${fmt(out.thirds.inf,0)}% da altura facial (ideal ≈33%): deficiência vertical de mento/mandíbula.`,['mentoVertical'],['me']);
+  if(out.thirds.inf>37) F('warn','Terço inferior aumentado',`${fmt(out.thirds.inf,0)}% da altura facial: evitar alongar o mento. Avaliar a oclusão e o excesso vertical de maxila.`,['inferiorLongo'],['me']);
+  if(out.thirds.med<30) F('warn','Terço médio reduzido',`${fmt(out.thirds.med,0)}% da altura facial.`,['malar'],['zyR','zyL']);
+  if(out.thirds.sup>38) F('info','Terço superior aumentado','Geralmente pela implantação do cabelo; não é alvo direto de HOF.',[],['tri']);
+  const r1=(fr.me.y-fr.st.y)/(fr.st.y-fr.sn.y);
+  M('Proporções verticais','Subnasal–estômio : estômio–mento',`1 : ${fmt(r1,2)}`,'1 : 2',Math.abs(r1-2)<=0.25?'ok':Math.abs(r1-2)<=0.5?'warn':'bad');
+  if(r1<1.6) F('warn','Mento verticalmente curto',`Proporção 1 : ${fmt(r1,2)} (ideal 1 : 2).`,['mentoVertical'],['me']);
+  if(r1>2.5) F('warn','Lábio superior curto ou mento longo',`Proporção 1 : ${fmt(r1,2)} (ideal 1 : 2).`,[],['sn']);
+  // lábios
+  const lsH=(fr.st.y-fr.ls.y)*s, liH=(fr.li.y-fr.st.y)*s, lr=liH/lsH;
+  M('Lábios','Altura do lábio superior',`${fmt(lsH)} mm`,'7–9 mm',lsH<6?'warn':'ok');
+  M('Lábios','Altura do lábio inferior',`${fmt(liH)} mm`,'9–12 mm',liH<8?'warn':'ok');
+  M('Lábios','Razão inferior : superior',`${fmt(lr,2)} : 1`,'1,4–1,8 : 1',lr>=1.3&&lr<=1.9?'ok':'warn');
+  if(lsH<6||liH<8) F('warn','Vermelhão labial fino',`Superior ${fmt(lsH)} mm, inferior ${fmt(liH)} mm.`,['labioVolume'],[['ls','li']]);
+  if(lr<1.25) F('warn','Lábio inferior desproporcionalmente pequeno',`Razão ${fmt(lr,2)} : 1 (ideal ≈1,6 : 1).`,['labioInferior'],['li']);
+  if(lr>2.0) F('warn','Lábio superior desproporcionalmente fino',`Razão ${fmt(lr,2)} : 1 (ideal ≈1,6 : 1).`,['labioSuperior'],['ls']);
+  const chDrop=((fr.chR.y+fr.chL.y)/2-fr.st.y)*s;
+  M('Lábios','Comissuras vs. estômio',`${chDrop>0?'+':''}${fmt(chDrop)} mm`,'≈ 0 mm',chDrop<=1.5?'ok':chDrop<=3?'warn':'bad','positivo = abaixo');
+  if(chDrop>1.5) F(chDrop>3?'bad':'warn','Comissuras labiais rebaixadas',`${fmt(chDrop)} mm abaixo do estômio: aspecto triste ou cansado.`,['comissura'],['chR','chL']);
+  if(!oblique){ const mw=Math.abs(fr.chL.x-fr.chR.x)*s, ipd=Math.abs(fr.puL.x-fr.puR.x)*s; M('Lábios','Largura da boca',`${fmt(mw)} mm`,`≈ ${fmt(ipd-11.7,0)} mm (limbos mediais)`,'info'); }
+  // olhos
+  const tiltC=(cm,cl)=>deg(Math.atan2(cm.y-cl.y,Math.abs(cl.x-cm.x)));
+  const tR=tiltC(fr.cmR,fr.clR), tL=tiltC(fr.cmL,fr.clL), tRef=sex==='F'?'+4° a +8°':'+2° a +6°', tSv=t=>t>=2?'ok':t>=0?'warn':'bad';
+  M('Olhos','Inclinação cantal D',`${tR>0?'+':''}${fmt(tR)}°`,tRef,tSv(tR));
+  M('Olhos','Inclinação cantal E',`${tL>0?'+':''}${fmt(tL)}°`,tRef,tSv(tL));
+  if((tR+tL)/2<2) F((tR+tL)/2<0?'bad':'warn','Inclinação cantal baixa ou negativa',`Média de ${fmt((tR+tL)/2)}°: olhar com aspecto cansado.`,['olharCansado'],['clR','clL']);
+  const brR=(fr.puR.y-fr.brR.y)*s, brL=(fr.puL.y-fr.brL.y)*s;
+  M('Olhos','Ápice da sobrancelha acima da pupila (D / E)',`${fmt(brR)} / ${fmt(brL)} mm`,'simétrico','info');
+  if(!oblique){
+    const eye=(Math.abs(fr.clR.x-fr.cmR.x)+Math.abs(fr.clL.x-fr.cmL.x))/2, icd=fr.cmL.x-fr.cmR.x, fw=fr.zyL.x-fr.zyR.x;
+    M('Olhos','Intercantal : largura do olho',fmt(icd/eye,2),'≈ 1,0',Math.abs(icd/eye-1)<=0.12?'ok':'warn');
+    M('Olhos','Largura facial em “olhos” (quintos)',fmt(fw/eye,2),'≈ 5',Math.abs(fw/eye-5)<=0.4?'ok':'warn');
+    const an=(fr.alL.x-fr.alR.x)/icd;
+    M('Nariz','Base alar : intercantal',fmt(an,2),'≈ 1,0',an<=1.12?'ok':an<=1.25?'warn':'bad');
+    if(an>1.12) F('warn','Base nasal larga',`Largura alar ${fmt(an*100-100,0)}% maior que a intercantal.`,['nariz'],[['alR','alL']]);
+    const gz=(fr.goL.x-fr.goR.x)/fw, gRef=sex==='F'?[0.70,0.80]:[0.78,0.90];
+    M('Contorno','Bigonial : bizigomática',fmt(gz,2),`${fmt(gRef[0],2)}–${fmt(gRef[1],2)}`,gz>=gRef[0]-0.02&&gz<=gRef[1]+0.02?'ok':'warn');
+    if(gz>gRef[1]+0.02) F('warn',sex==='F'?'Terço inferior largo (face quadrada)':'Mandíbula larga em relação ao zigomático',`Razão ${fmt(gz,2)}. Avaliar hipertrofia de masseter à palpação.`,['masseter'],['goR','goL']);
+    if(gz<gRef[0]-0.02) F('warn',sex==='M'?'Contorno mandibular pouco definido':'Mandíbula estreita',`Razão ${fmt(gz,2)}.`,['mandibula'],['goR','goL']);
+    // simetria
+    [['puR','puL','Pupilas',false],['clR','clL','Cantos laterais',false],['brR','brL','Sobrancelhas',true],['zyR','zyL','Zigomáticos',true],['alR','alL','Asas nasais',true],['chR','chL','Comissuras',true],['goR','goL','Ângulos mandibulares',true]].forEach(([r,l,name,h])=>{
+      const dy=(fr[r].y-fr[l].y)*s, dx=((midX-fr[r].x)-(fr[l].x-midX))*s, v=Math.abs(dy), hz=Math.abs(dx);
+      const sv=(r==='zyR')?'ok':(v<1.5?'ok':v<3?'warn':'bad'), sh=!h?'ok':(hz<2?'ok':hz<4?'warn':'bad');
+      const sev=[sv,sh].includes('bad')?'bad':[sv,sh].includes('warn')?'warn':'ok';
+      out.pairs.push({r,l,name,dy,dx,sev});
+      M('Simetria',name,`vert. ${fmt(v)} · horiz. ${fmt(hz)} mm`,'< 1,5 / < 2 mm',sev,(sv!=='ok'?`${dy>0?'D':'E'} mais baixo`:'')+(sh!=='ok'?`${sv!=='ok'?' · ':''}${dx>0?'D':'E'} mais lateral`:''));
+    });
+    const Q=Object.fromEntries(out.pairs.map(p=>[p.r,p]));
+    if(Math.abs(Q.brR.dy)>=1.5) F(Math.abs(Q.brR.dy)>=3?'bad':'warn','Assimetria de sobrancelhas',`Sobrancelha ${Q.brR.dy>0?'direita':'esquerda'} ${fmt(Math.abs(Q.brR.dy))} mm mais baixa.`,['sobrancelhaAssim'],[Q.brR.dy>0?'brR':'brL']);
+    if(Math.abs(Q.chR.dy)>=1.5) F(Math.abs(Q.chR.dy)>=3?'bad':'warn','Assimetria de comissuras',`Comissura ${Q.chR.dy>0?'direita':'esquerda'} ${fmt(Math.abs(Q.chR.dy))} mm mais baixa.`,['comissuraAssim'],[Q.chR.dy>0?'chR':'chL']);
+    if(Math.abs(Q.zyR.dx)>=2) F(Math.abs(Q.zyR.dx)>=4?'bad':'warn','Assimetria de projeção malar',`Lado ${Q.zyR.dx>0?'esquerdo':'direito'} ${fmt(Math.abs(Q.zyR.dx))} mm mais estreito. Confirmar na vista inferior e na palpação.`,['malarAssim'],[Q.zyR.dx>0?'zyL':'zyR']);
+    if(Math.abs(Q.goR.dx)>=2||Math.abs(Q.goR.dy)>=3) F(Math.abs(Q.goR.dx)>=4?'bad':'warn','Assimetria dos ângulos mandibulares',`Diferença horizontal de ${fmt(Math.abs(Q.goR.dx))} mm e vertical de ${fmt(Math.abs(Q.goR.dy))} mm.`,['mandibulaAssim'],['goR','goL']);
+    if(Math.abs(Q.puR.dy)>=2) F('info','Distopia orbitária leve',`Pupilas com ${fmt(Math.abs(Q.puR.dy))} mm de desnível (esquelético, sem tratamento direto em HOF).`,[],['puR','puL']);
+    if(Math.abs(Q.alR.dx)>=2) F('warn','Assimetria nasal',`Asas nasais com ${fmt(Math.abs(Q.alR.dx))} mm de diferença em relação à linha média.`,['nariz'],[['alR','alL']]);
+    const meDev=(fr.me.x-midX)*s, lsDev=(fr.ls.x-midX)*s;
+    M('Linha média','Desvio do mento',`${fmt(Math.abs(meDev))} mm`,'< 2 mm',Math.abs(meDev)<2?'ok':Math.abs(meDev)<4?'warn':'bad');
+    M('Linha média','Desvio do filtro labial',`${fmt(Math.abs(lsDev))} mm`,'< 1,5 mm',Math.abs(lsDev)<1.5?'ok':'warn');
+    if(Math.abs(meDev)>=2) F(Math.abs(meDev)>=4?'bad':'warn','Mento desviado da linha média',`${fmt(Math.abs(meDev))} mm para o lado ${meDev>0?'esquerdo':'direito'} do paciente.`,['mentoAssim'],['me']);
+    const asym=out.pairs.reduce((t,p)=>t+Math.abs(p.dy)+(['puR','clR'].includes(p.r)?0:Math.abs(p.dx)*0.6),0)/out.pairs.length+Math.abs(meDev)*0.3;
+    out.symIndex=Math.max(0,Math.min(100,100-asym*6));
+  }
+  out.kpis=[['Simetria', out.symIndex!=null?`${fmt(out.symIndex,0)}/100`:'—'],['Terços S·M·I',`${fmt(out.thirds.sup,0)}·${fmt(out.thirds.med,0)}·${fmt(out.thirds.inf,0)}`],['Pontos a melhorar',String(out.findings.filter(f=>f.sev!=='info').length)]];
+  return out;
+}
+
+// =====================================================================
+//  ANÁLISE DE PERFIL (cefalometria de tecidos moles)
+// =====================================================================
+function analyzeProfile(slot, sex){
+  const P0=slot.pts, s=slot.scale.s;
+  const facing = slot.facing || ((P0.prn.x-(P0.c||P0.me).x)>0?'R':'L'); slot.facing=facing;
+  const P={}; for(const k in P0) P[k]={x:facing==='R'?P0[k].x:-P0[k].x, y:P0[k].y}; // x+ = anterior
+  const out={metrics:[],findings:[],tags:new Set(),warnings:[],m:{}};
+  const M=(group,name,val,ref,sev,hint)=>out.metrics.push({group,name,val:pt(val),ref:pt(ref),sev,hint});
+  const F=(sev,title,detail,tags,at)=>{ out.findings.push({sev,title,detail:pt(detail),at}); (tags||[]).forEach(t=>out.tags.add(t)); };
+  const m=out.m;
+  m.nasolabial=angAt(P.cm,P.sn,P.ls);
+  m.nasofrontal=angAt(P.g,P.n,P.prn);
+  m.convex=angAt(P.g,P.sn,P.pg); const convexSide=sdist(P.sn,P.g,P.pg); if(convexSide<0) m.convex=360-m.convex; // sn atrás da linha G–Pg → côncavo
+  m.mentolabial=angAt(P.li,P.sm,P.pg);
+  if(P.c&&P.me&&P.nk) m.cervicomental=angAt(P.me,P.c,P.nk);
+  m.eLs=sdist(P.ls,P.prn,P.pg)*s; m.eLi=sdist(P.li,P.prn,P.pg)*s;
+  m.bLs=sdist(P.ls,P.sn,P.pg)*s; m.bLi=sdist(P.li,P.sn,P.pg)*s;
+  const nlRef=sex==='F'?[95,110]:[90,105];
+  // --- Nariz
+  M('Nariz','Ângulo nasolabial',`${fmt(m.nasolabial,0)}°`,`${nlRef[0]}–${nlRef[1]}°`, m.nasolabial<nlRef[0]-5?'bad':m.nasolabial<nlRef[0]?'warn':m.nasolabial>nlRef[1]+10?'warn':'ok');
+  if(m.nasolabial<nlRef[0]) F(m.nasolabial<nlRef[0]-8?'bad':'warn','Ângulo nasolabial fechado (ponta nasal caída)',`${fmt(m.nasolabial,0)}° (referência ${nlRef[0]}–${nlRef[1]}°). Ponta pouco rotacionada ou lábio superior projetado.`,['rinoPonta'],['sn','prn']);
+  if(m.nasolabial>nlRef[1]+10) F('info','Ângulo nasolabial aberto',`${fmt(m.nasolabial,0)}°: ponta muito rotacionada. Evitar procedimentos que a elevem ainda mais.`,[],['sn']);
+  M('Nariz','Ângulo nasofrontal',`${fmt(m.nasofrontal,0)}°`,'115–135°', m.nasofrontal<115?'warn':m.nasofrontal>140?'warn':'ok');
+  if(m.nasofrontal<115) F('warn','Násio profundo (ângulo nasofrontal fechado)',`${fmt(m.nasofrontal,0)}° (referência 115–135°).`,['rinoNasio'],['n']);
+  if(slot.contour){
+    const seg=slot.contour.up.filter(p=>p.y>P0.n.y&&p.y<P0.prn.y).map(p=>({x:facing==='R'?p.x:-p.x,y:p.y}));
+    let hump=0; seg.forEach(p=>{ hump=Math.max(hump, sdist(p,P.n,P.prn)); }); hump*=s; m.hump=hump;
+    M('Nariz','Giba do dorso (acima da linha N–Prn)',`${fmt(hump)} mm`,'< 1,5 mm',hump<1.5?'ok':hump<3?'warn':'bad');
+    if(hump>=1.5) F(hump>=3?'bad':'warn','Giba no dorso nasal',`Dorso ${fmt(hump)} mm acima da linha násio–ponta.`,['rinoGiba'],[['n','prn']]);
+  }
+  // --- Perfil global
+  M('Perfil','Convexidade facial (G–Sn–Pg)',`${fmt(m.convex,0)}°`,'165–175°', m.convex<160?'bad':m.convex<165?'warn':m.convex>180?'warn':'ok');
+  if(m.convex<165) F(m.convex<160?'bad':'warn','Perfil convexo',`Ângulo ${fmt(m.convex,0)}° (referência 165–175°): mento retroposicionado em relação ao terço médio.`,['mentoProj','mandibula'],['pg']);
+  if(m.convex>180) F('warn','Perfil reto ou côncavo',`Ângulo ${fmt(m.convex,0)}°: terço médio deficiente ou mento proeminente. Cautela com a projeção do mento.`,['paranasal'],['sn']);
+  const fhOk=P.tr&&P.or;
+  if(fhOk){
+    const ux=P.or.x-P.tr.x, uy=P.or.y-P.tr.y, ul=Math.hypot(ux,uy); const u={x:ux/ul,y:uy/ul};
+    out.fh={u:{x:(P0.or.x-P0.tr.x)/ul,y:(P0.or.y-P0.tr.y)/ul}};
+    const dPg=((P.pg.x-P.n.x)*u.x+(P.pg.y-P.n.y)*u.y)*s; m.zero=dPg;
+    const ref=sex==='F'?[-2,1]:[-1,2];
+    M('Perfil','Pogônio vs. meridiano zero (Frankfurt)',`${dPg>0?'+':''}${fmt(dPg)} mm`,`${ref[0]} a +${ref[1]} mm`, dPg<ref[0]-4?'bad':dPg<ref[0]?'warn':dPg>ref[1]+4?'warn':'ok');
+    if(dPg<ref[0]) F(dPg<ref[0]-4?'bad':'warn','Mento retruído',`Pogônio ${fmt(Math.abs(dPg))} mm atrás do meridiano zero.`,['mentoProj'],['pg']);
+    if(dPg>ref[1]+4) F('warn','Mento projetado',`Pogônio ${fmt(dPg)} mm à frente do meridiano zero: não projetar mais o mento.`,[],['pg']);
+    const fhAng=deg(Math.atan2(P0.or.y-P0.tr.y, Math.abs(P0.or.x-P0.tr.x)));
+    if(Math.abs(fhAng)>8) out.warnings.push(`Plano de Frankfurt inclinado ${fmt(Math.abs(fhAng),0)}° na foto: a cabeça não está na posição natural.`);
+  } else {
+    const dPg=(P.pg.x-P.n.x)*s; m.zeroV=dPg;
+    M('Perfil','Pogônio vs. vertical do násio (foto)',`${dPg>0?'+':''}${fmt(dPg)} mm`,'−2 a +2 mm', dPg<-8?'bad':dPg<-3?'warn':'ok','depende da cabeça em posição natural');
+    if(dPg<-3 && !out.tags.has('mentoProj')) F(dPg<-8?'bad':'warn','Mento retruído',`Pogônio ${fmt(Math.abs(dPg))} mm atrás da vertical do násio.`,['mentoProj'],['pg']);
+  }
+  // --- Lábios
+  const eRef=[[-6,-2],[-4,0]]; // Ls, Li (Ricketts: Ls ≈ −4, Li ≈ −2)
+  M('Lábios','Lábio superior → Linha E',`${m.eLs>0?'+':''}${fmt(m.eLs)} mm`,'−4 ± 2 mm', m.eLs>0?'warn':m.eLs<-8?'warn':'ok');
+  M('Lábios','Lábio inferior → Linha E',`${m.eLi>0?'+':''}${fmt(m.eLi)} mm`,'−2 ± 2 mm', m.eLi>1?'warn':m.eLi<-6?'warn':'ok');
+  M('Lábios','Lábio superior → linha Sn–Pg',`${m.bLs>0?'+':''}${fmt(m.bLs)} mm`,'+3,5 ± 1,5 mm', Math.abs(m.bLs-3.5)<=2?'ok':'warn');
+  M('Lábios','Lábio inferior → linha Sn–Pg',`${m.bLi>0?'+':''}${fmt(m.bLi)} mm`,'+2,2 ± 1,5 mm', Math.abs(m.bLi-2.2)<=2?'ok':'warn');
+  if(m.eLs<-8||m.eLi<-6) F('warn','Lábios retroposicionados',`Ls ${fmt(m.eLs)} mm e Li ${fmt(m.eLi)} mm da linha E: pouca projeção labial (ou nariz e mento muito projetados).`,['labioProj'],[['ls','li']]);
+  if(m.eLs>0||m.eLi>1) F('warn','Lábios à frente da linha E',`Ls ${m.eLs>0?'+':''}${fmt(m.eLs)} mm, Li ${m.eLi>0?'+':''}${fmt(m.eLi)} mm: protrusão labial relativa. Antes de volumizar, avaliar mento e nariz.`,['labioProtruso'],[['ls','li']]);
+  if(m.bLs < m.bLi-1.5) F('info','Lábio inferior mais projetado que o superior','Avaliar a relação dentária (classe III) e a proporção labial.',[],['li']);
+  M('Lábios','Ângulo mentolabial',`${fmt(m.mentolabial,0)}°`,'110–130°', m.mentolabial<105?'warn':m.mentolabial>140?'warn':'ok');
+  if(m.mentolabial<105) F('warn','Sulco mentolabial profundo',`Ângulo ${fmt(m.mentolabial,0)}° (referência 110–130°).`,['sulcoMentolabial'],['sm']);
+  if(m.mentolabial>140) F('info','Sulco mentolabial raso',`Ângulo ${fmt(m.mentolabial,0)}°: comum com hiperatividade do mentual ou mento retruído.`,['mentual'],['sm']);
+  // --- Proporções verticais
+  const gs=P.sn.y-P.g.y, sm_=P.me.y-P.sn.y, ratio=sm_/gs;
+  M('Proporções verticais','Terço inferior / terço médio (G–Sn : Sn–Me)',fmt(ratio,2),'≈ 1,0',Math.abs(ratio-1)<=0.08?'ok':Math.abs(ratio-1)<=0.15?'warn':'bad');
+  if(ratio<0.92) F(ratio<0.85?'bad':'warn','Terço inferior curto no perfil',`Razão ${fmt(ratio,2)} (ideal ≈1).`,['mentoVertical'],['me']);
+  if(ratio>1.12) F('warn','Terço inferior longo no perfil',`Razão ${fmt(ratio,2)}.`,['inferiorLongo'],['me']);
+  const r1=(P.me.y-P.st.y)/(P.st.y-P.sn.y);
+  M('Proporções verticais','Sn–St : St–Me',`1 : ${fmt(r1,2)}`,'1 : 2',Math.abs(r1-2)<=0.25?'ok':'warn');
+  // --- Contorno cervical
+  if(m.cervicomental!=null){
+    M('Contorno cervical','Ângulo cervicomental',`${fmt(m.cervicomental,0)}°`,'105–120°', m.cervicomental>130?'bad':m.cervicomental>120?'warn':'ok');
+    if(m.cervicomental>120) F(m.cervicomental>130?'bad':'warn','Ângulo cervicomental aberto',`${fmt(m.cervicomental,0)}° (referência 105–120°): perda de definição entre pescoço e mandíbula (papada, flacidez ou mento retruído).`,['papada'],['c']);
+    const subm=dist(P.me,P.c)*s; m.subm=subm;
+    M('Contorno cervical','Comprimento submentual (Me–C)',`${fmt(subm)} mm`,'≥ 40 mm (estimativa)',subm<35?'warn':'ok');
+  } else out.warnings.push('Ponto cervical ou pescoço não marcados: ângulo cervicomental não calculado.');
+  out.kpis=[['Nasolabial',`${fmt(m.nasolabial,0)}°`],['Convexidade',`${fmt(m.convex,0)}°`],['Pontos a melhorar',String(out.findings.filter(f=>f.sev!=='info').length)]];
+  return out;
+}
+
+// =====================================================================
+//  BASE DE CONHECIMENTO: achados → condutas
+// =====================================================================
+const KB = {
+  mentoVertical:{area:'Mento',proc:'Alongamento de mento com AH de alto G′',txt:'Bolus supraperiosteal no mentoniano/pogônio e acabamento subcutâneo. Restabelece a altura do terço inferior.',pri:1},
+  mentoProj:{area:'Mento',proc:'Projeção de mento com AH de alta coesão/G′ ou CaHA',txt:'Pontos supraperiosteais no pogônio (vetor anterior) com complemento lateral. Corrige o perfil convexo, reduz a protrusão labial relativa e melhora o ângulo cervicomental.',pri:1},
+  inferiorLongo:{area:'Mento',proc:'Evitar ganho vertical no mento',txt:'Projetar apenas no sentido anterior, se necessário. Considerar toxina no mentual e avaliação ortodôntica ou ortognática.',pri:3},
+  malar:{area:'Terço médio',proc:'Estruturação malar/zigomática com AH de alto G′',txt:'Pontos supraperiosteais no arco e na eminência zigomática. Repõe suporte e gera efeito lifting no nasogeniano e no terço inferior.',pri:1},
+  malarAssim:{area:'Terço médio',proc:'Preenchimento malar compensatório',txt:'Mais volume no lado de menor projeção, com fotos comparativas. Reavaliar em 15–30 dias.',pri:1},
+  paranasal:{area:'Terço médio',proc:'Preenchimento paranasal / fossa piriforme',txt:'Dá suporte à base nasal e ao lábio superior em perfis retos ou côncavos (deficiência de maxila). Combinar com estruturação malar.',pri:1},
+  mandibula:{area:'Contorno mandibular',proc:'Definição de mandíbula com AH de alto G′ ou CaHA',txt:'Ângulo (supraperiosteal), corpo e transição pré-jowl com cânula. Melhora a definição e o contraste face–pescoço.',pri:1},
+  mandibulaAssim:{area:'Contorno mandibular',proc:'Equilíbrio dos ângulos mandibulares',txt:'Toxina com dose maior no masseter hipertrófico ou preenchimento do ângulo deficiente. Descartar causa dentária ou ATM.',pri:1},
+  masseter:{area:'Masseter',proc:'Toxina botulínica no masseter',txt:'Afinamento do terço inferior e controle de bruxismo. Aplicar no terço inferior do ventre, longe do risório.',pri:2},
+  mentoAssim:{area:'Mento',proc:'Preenchimento assimétrico de mento',txt:'Volumizar o lado deficiente para centralizar o pogônio. Se o desvio for esquelético importante, considerar avaliação ortocirúrgica.',pri:2},
+  labioVolume:{area:'Lábios',proc:'Preenchimento labial com AH de média reticulação',txt:'Contorno, volume e hidratação respeitando ≈1 : 1,6 (superior : inferior).',pri:3},
+  labioInferior:{area:'Lábios',proc:'Volumização do lábio inferior',txt:'Corrigir a proporção priorizando a projeção central e os tubérculos laterais do lábio inferior.',pri:3},
+  labioSuperior:{area:'Lábios',proc:'Volumização do lábio superior / contorno',txt:'Arco do cupido, tubérculo central e colunas do filtro.',pri:3},
+  labioProj:{area:'Lábios',proc:'Projeção labial com AH',txt:'Volume no vermelhão com vetor anterior, em pequenas quantidades. Antes, conferir se o problema não é nariz ou mento muito projetados.',pri:3},
+  labioProtruso:{area:'Lábios',proc:'Não volumizar os lábios: harmonizar com mento e nariz',txt:'A protrusão labial relativa melhora com projeção de mento e/ou rinomodelação. Considerar avaliação ortodôntica (biprotrusão).',pri:2},
+  comissura:{area:'Comissuras',proc:'Toxina no DAO + preenchimento de comissura',txt:'Toxina no depressor do ângulo da boca (ponto lateral e inferior) e AH de suporte no ângulo da comissura e no pré-jowl.',pri:2},
+  comissuraAssim:{area:'Comissuras',proc:'Toxina assimétrica no DAO',txt:'Dose no lado que traciona mais para baixo. Descartar paresia facial antes.',pri:2},
+  olharCansado:{area:'Olhar',proc:'Elevação da cauda da sobrancelha com toxina + suporte lateral',txt:'Toxina no orbicular lateral (ponto da cauda) e AH temporal ou no zigomático lateral para suporte do canto.',pri:2},
+  sobrancelhaAssim:{area:'Sobrancelhas',proc:'Toxina assimétrica para nivelar as sobrancelhas',txt:'Menos frontal e mais orbicular lateral no lado mais baixo. Checar em repouso e em elevação.',pri:2},
+  nariz:{area:'Nariz',proc:'Avaliar rinomodelação (AH) e/ou toxina no nasal',txt:'A rinomodelação não estreita a base alar. A toxina no dilatador da narina suaviza o alargamento dinâmico. Área de alto risco vascular.',pri:3},
+  rinoPonta:{area:'Nariz',proc:'Rinomodelação: rotação da ponta + toxina no depressor do septo',txt:'AH na espinha nasal anterior/columela para abrir o ângulo nasolabial. Toxina no depressor do septo nasal reduz a queda da ponta ao sorrir. Alto risco vascular: cânula e baixo volume.',pri:2},
+  rinoNasio:{area:'Nariz',proc:'Rinomodelação no násio (radix)',txt:'AH supraperiosteal no násio para suavizar a transição testa–nariz e alinhar o dorso.',pri:3},
+  rinoGiba:{area:'Nariz',proc:'Rinomodelação para camuflagem de giba',txt:'AH acima (radix) e abaixo da giba (supratip) para retificar o dorso. Não reduz o tamanho do nariz: giba grande → rinoplastia.',pri:3},
+  sulcoMentolabial:{area:'Mento',proc:'AH no sulco mentolabial + toxina no mentual',txt:'Preenchimento do sulco profundo e, se houver eversão do lábio inferior por hiperatividade, toxina no mentual. Associar à projeção de mento, se indicada.',pri:2},
+  mentual:{area:'Mento',proc:'Toxina no mentual',txt:'Pontos baixos e centrais para relaxar a hiperatividade (mento em casca de laranja).',pri:3},
+  papada:{area:'Contorno cervical',proc:'Definição cervicomental',txt:'Se houver gordura pinçável: lipo enzimática ou ácido deoxicólico. Se houver flacidez: bioestimulador ou fios de PDO. Projetar o mento e definir a mandíbula melhora muito o ângulo. Toxina no platisma se houver bandas.',pri:2},
+};
+const CHECKS = [
+  {id:'frontal',label:'Linhas frontais (testa)',area:'Terço superior',proc:'Toxina no frontal',txt:'Doses conservadoras e pontos altos se a sobrancelha for baixa ou houver ptose palpebral.',pri:2},
+  {id:'glabela',label:'Linhas glabelares (“11”)',area:'Terço superior',proc:'Toxina no corrugador e no prócero',txt:'O padrão de contração define os pontos. Aplicar acima da borda orbital.',pri:2},
+  {id:'pes',label:'Pés de galinha',area:'Olhar',proc:'Toxina no orbicular lateral',txt:'Três pontos em leque, ~1 cm da borda orbital lateral. Cautela com o zigomático maior.',pri:2},
+  {id:'bunny',label:'Bunny lines (nasal)',area:'Nariz',proc:'Toxina no músculo nasal',txt:'Um ponto em cada parede lateral do dorso.',pri:3},
+  {id:'gengival',label:'Sorriso gengival',area:'Sorriso',proc:'Toxina no LLSAN (ponto de Yonsei)',txt:'Dose baixa. Se for excesso vertical de maxila, encaminhar.',pri:2},
+  {id:'mentual',label:'Mento “casca de laranja”',area:'Mento',proc:'Toxina no mentual',txt:'Pontos baixos e centrais.',pri:2},
+  {id:'bruxismo',label:'Bruxismo / masseter hipertrófico',area:'Masseter',proc:'Toxina no masseter',txt:'Confirmar com contração voluntária. Associar à avaliação de DTM.',pri:2},
+  {id:'platisma',label:'Bandas platismais',area:'Pescoço',proc:'Toxina no platisma (Nefertiti lift)',txt:'Pontos nas bandas e ao longo da borda mandibular.',pri:3},
+  {id:'olheira',label:'Olheira / goteira lacrimal',area:'Olhar',proc:'AH de baixa reticulação na goteira',txt:'Supraperiosteal, com cânula. Com bolsa de gordura proeminente, considerar blefaroplastia. Tratar o malar antes.',pri:3},
+  {id:'nasogeniano',label:'Sulco nasogeniano marcado',area:'Terço médio',proc:'Suporte malar primeiro; AH no sulco se persistir',txt:'O sulco é consequência da perda de suporte do terço médio.',pri:2,add:['malar']},
+  {id:'marionete',label:'Linhas de marionete',area:'Comissuras',proc:'AH no pré-jowl + toxina no DAO',txt:'Suporte no ângulo da comissura e no pré-jowl.',pri:2,add:['comissura']},
+  {id:'temporal',label:'Depressão temporal',area:'Terço superior',proc:'AH ou bioestimulador temporal',txt:'Supraperiosteal ou subcutâneo com cânula. Atenção à artéria temporal superficial.',pri:2},
+  {id:'labiosFinos',label:'Lábios finos / desidratados',area:'Lábios',proc:'Preenchimento ou hidratação labial',txt:'Volume e contorno, ou skinbooster labial.',pri:3,add:['labioVolume']},
+  {id:'flacidez',label:'Flacidez de terço inferior',area:'Qualidade tecidual',proc:'Bioestimulador (CaHA/PLLA) e/ou fios de PDO',txt:'Sessões a cada 30–60 dias.',pri:3},
+  {id:'papada',label:'Gordura submentual (papada)',area:'Pescoço',proc:'Lipo enzimática / ácido deoxicólico',txt:'Confirmar que é gordura pinçável (e não flacidez ou glândula).',pri:3},
+  {id:'pele',label:'Textura de pele / poros / manchas',area:'Qualidade de pele',proc:'Skinbooster, microagulhamento, peeling',txt:'Etapa de manutenção.',pri:4},
+];
+const PRI_LABEL={1:['Estrutural','bad'],2:['Prioritário','warn'],3:['Refinamento','info'],4:['Manutenção','ok']};
+
+function buildPlan(){
+  const items=new Map();
+  ['front','profile'].forEach(v=>{ const r=S.slots[v]&&S.slots[v].result; if(!r) return;
+    r.findings.forEach(f=>{ (f.tagList||[]).forEach(t=>{ if(!KB[t]) return; if(!items.has(t)) items.set(t,{...KB[t],why:[]}); items.get(t).why.push(`${VIEW_NAME[v]}: ${f.title.toLowerCase()}`); }); });
+  });
+  CHECKS.forEach(c=>{ if(!S.checks.has(c.id)) return; items.set('chk_'+c.id,{area:c.area,proc:c.proc,txt:c.txt,pri:c.pri,why:['Exame clínico: '+c.label.toLowerCase()]});
+    (c.add||[]).forEach(t=>{ if(KB[t]&&!items.has(t)) items.set(t,{...KB[t],why:['Relacionado a: '+c.label.toLowerCase()]}); }); });
+  return [...items.values()].sort((a,b)=>a.pri-b.pri);
+}
+
+// =====================================================================
+//  SAÍDA
+// =====================================================================
+function analyzeAll(){
+  const sex=$('pSex').value;
+  ['front','profile'].forEach(v=>{ const s=S.slots[v]; if(!s) return; if(!complete(s)){ s.result=null; return; }
+    computeScale(s);
+    const r = v==='front'?analyzeFront(s,sex):analyzeProfile(s,sex);
+    // registra as tags de cada achado (para o "por quê" do plano)
+    r.findings.forEach(f=>f.tagList=f.tagList||[]);
+    s.result=r;
+  });
+  // reconstrói vínculo achado→tags (feito pela ordem de inserção)
+  refreshResults(); render(); updateUI();
+}
+// captura das tags por achado: envolvemos F via monkey-patch simples
+const _af=analyzeFront, _ap=analyzeProfile;
+analyzeFront=function(slot,sex){ const r=_af(slot,sex); linkTags(r); return r; };
+analyzeProfile=function(slot,sex){ const r=_ap(slot,sex); linkTags(r); return r; };
+function linkTags(r){ /* as tags foram adicionadas na ordem; refazemos por título */ const map={
+  'Terço inferior reduzido':['mentoVertical'],'Terço inferior aumentado':['inferiorLongo'],'Terço médio reduzido':['malar'],'Mento verticalmente curto':['mentoVertical'],
+  'Vermelhão labial fino':['labioVolume'],'Lábio inferior desproporcionalmente pequeno':['labioInferior'],'Lábio superior desproporcionalmente fino':['labioSuperior'],
+  'Comissuras labiais rebaixadas':['comissura'],'Inclinação cantal baixa ou negativa':['olharCansado'],'Base nasal larga':['nariz'],'Terço inferior largo (face quadrada)':['masseter'],
+  'Mandíbula larga em relação ao zigomático':['masseter'],'Contorno mandibular pouco definido':['mandibula'],'Mandíbula estreita':['mandibula'],'Assimetria de sobrancelhas':['sobrancelhaAssim'],
+  'Assimetria de comissuras':['comissuraAssim'],'Assimetria de projeção malar':['malarAssim'],'Assimetria dos ângulos mandibulares':['mandibulaAssim'],'Assimetria nasal':['nariz'],
+  'Mento desviado da linha média':['mentoAssim'],'Ângulo nasolabial fechado (ponta nasal caída)':['rinoPonta'],'Násio profundo (ângulo nasofrontal fechado)':['rinoNasio'],'Giba no dorso nasal':['rinoGiba'],
+  'Perfil convexo':['mentoProj','mandibula'],'Perfil reto ou côncavo':['paranasal'],'Mento retruído':['mentoProj'],'Lábios retroposicionados':['labioProj'],'Lábios à frente da linha E':['labioProtruso'],
+  'Sulco mentolabial profundo':['sulcoMentolabial'],'Sulco mentolabial raso':['mentual'],'Terço inferior curto no perfil':['mentoVertical'],'Terço inferior longo no perfil':['inferiorLongo'],'Ângulo cervicomental aberto':['papada']};
+  r.findings.forEach(f=>f.tagList=map[f.title]||[]); }
+
+function refreshResults(){
+  const views=['front','profile'].filter(v=>S.slots[v]&&S.slots[v].result);
+  $('results').classList.toggle('hidden',!views.length);
+  if(!views.length) return;
+  const chip=s=>({ok:'<span class="chip ok">Adequado</span>',warn:'<span class="chip warn">Atenção</span>',bad:'<span class="chip bad">Desvio</span>',info:'<span class="chip info">Info</span>'}[s]);
+  let H='', FH='';
+  views.forEach(v=>{ const s=S.slots[v], r=s.result;
+    H+=`<div class="vhead"><h2 style="margin:0">Medidas · ${VIEW_NAME[v]}</h2><span class="chip info">escala: ${s.scale.src}</span></div>`;
+    H+=`<div class="kpis">${r.kpis.map(([a,b])=>`<div class="kpi"><span>${a}</span><b>${b}</b></div>`).join('')}</div>`;
+    H+=[...r.warnings,...s.flags.filter(f=>/oblíqua|girado|inclinada|elevada|Frankfurt/.test(f))].map(w=>`<div class="find info"><div><b>Qualidade da foto</b><small>${w}</small></div></div>`).join('');
+    let g=''; H+='<table><thead><tr><th>Parâmetro</th><th>Valor</th><th>Referência</th><th></th></tr></thead><tbody>';
+    r.metrics.forEach(m=>{ if(m.group!==g){ g=m.group; H+=`<tr><th colspan="4" style="padding-top:14px">${g}</th></tr>`; }
+      H+=`<tr><td>${m.name}${m.hint?`<br><small style="color:var(--muted)">${m.hint}</small>`:''}</td><td class="v">${m.val}</td><td class="v" style="color:var(--muted)">${m.ref}</td><td>${chip(m.sev)}</td></tr>`; });
+    H+='</tbody></table>';
+    const num=r.findings.filter(f=>f.sev==='warn'||f.sev==='bad'), inf=r.findings.filter(f=>f.sev==='info');
+    FH+=`<div class="vhead"><h3 style="margin:0">${VIEW_NAME[v]}</h3>${views.length>1?`<button class="btn small" data-show="${v}">Ver na foto</button>`:''}</div>`;
+    FH+= num.length? num.map((f,i)=>`<div class="find ${f.sev}"><div class="n">${i+1}</div><div><b>${f.title}</b><small>${f.detail}</small></div></div>`).join('') : '<div class="find okk"><div><b>Sem desvios relevantes nesta vista</b><small>Dentro das referências. Use o exame clínico para direcionar o plano.</small></div></div>';
+    FH+= inf.map(f=>`<div class="find info"><div><b>${f.title}</b><small>${f.detail}</small></div></div>`).join('');
+  });
+  if(!S.slots.profile||!S.slots.profile.result) FH+='<p class="note" style="margin-top:10px">Envie também uma <b>foto de perfil</b> para avaliar mento, nariz, lábios na linha E e ângulo cervicomental.</p>';
+  if(!S.slots.front||!S.slots.front.result) FH+='<p class="note" style="margin-top:10px">Envie também uma <b>foto frontal</b> para avaliar simetria, terços e proporções.</p>';
+  $('measures').innerHTML=H; $('findings').innerHTML=FH;
+  renderPlan();
+}
+$('findings').addEventListener('click',e=>{ const v=e.target.dataset.show; if(!v) return; S.active=v; const s=A(); cv.width=s.W; cv.height=s.H; updateUI(); render(); $('work').scrollIntoView({behavior:'smooth'}); });
+function renderPlan(){
+  const plan=buildPlan();
+  $('plan').innerHTML=plan.length?plan.map(p=>{ const [lab,cls]=PRI_LABEL[p.pri]; return `<div class="sug"><div class="head"><div><div class="area">${p.area}</div><b>${p.proc}</b></div><span class="chip ${cls}">${lab}</span></div><p>${p.txt}</p>${p.why.length?`<div class="why">↳ ${[...new Set(p.why)].join(' · ')}</div>`:''}</div>`; }).join('')
+    :'<p style="color:var(--muted)">Nenhuma conduta sugerida pelas fotos. Marque os achados do exame clínico para montar o plano.</p>';
+  const has=a=>plan.some(p=>a.includes(p.pri)), seq=[];
+  if(plan.some(p=>/Toxina|toxina/.test(p.proc))) seq.push('<b>Sessão 1 – toxina botulínica.</b> Retorno em 15 dias para avaliação e retoque.');
+  if(has([1])) seq.push('<b>Estruturação</b>: terço médio (malar/paranasal), depois mento e mandíbula. Fotos padronizadas antes e depois.');
+  if(plan.some(p=>p.pri===2&&!/oxina/.test(p.proc))) seq.push('<b>Suporte e correções</b>: comissuras, sulcos, nariz, região cervical. Reavaliar após a estruturação.');
+  if(has([3])) seq.push('<b>Refinamentos</b>: lábios, olheira, detalhes do nariz. Volumes conservadores.');
+  seq.push('<b>Qualidade de pele e manutenção</b>: bioestimuladores, skinbooster. Revisão a cada 4–6 meses.');
+  $('seq').innerHTML=seq.map(s=>`<li><span>${s}</span></li>`).join('');
+}
+$('checklist').innerHTML=CHECKS.map(c=>`<label><input type="checkbox" data-id="${c.id}"><span>${c.label}</span></label>`).join('');
+$('checklist').addEventListener('change',e=>{ const id=e.target.dataset.id; if(!id) return; e.target.checked?S.checks.add(id):S.checks.delete(id); renderPlan(); });
+
+// =====================================================================
+//  EXPORTAÇÃO
+// =====================================================================
+function reportText(){
+  const L=[], d=new Date().toLocaleDateString('pt-BR');
+  L.push('ANÁLISE FACIAL – HOF',`Paciente: ${$('pName').value||'—'}   Data: ${d}   Referência: ${$('pSex').value==='F'?'feminina':'masculina'}`,'');
+  ['front','profile'].forEach(v=>{ const s=S.slots[v]; if(!s||!s.result) return; const r=s.result;
+    L.push(`== ${VIEW_NAME[v].toUpperCase()} ==  (${s.method||'marcação manual'}; escala: ${s.scale.src})`);
+    [...r.warnings].forEach(w=>L.push('! '+w));
+    r.metrics.forEach(m=>L.push(`- ${m.name}: ${m.val} (ref. ${m.ref})${m.sev==='warn'?' [atenção]':m.sev==='bad'?' [desvio]':''}`));
+    L.push('Pontos a melhorar:'); const f=r.findings.filter(x=>x.sev!=='ok'); (f.length?f:[{title:'Sem desvios relevantes',detail:''}]).forEach((x,i)=>L.push(`  ${i+1}. ${x.title}${x.detail?': '+x.detail:''}`)); L.push(''); });
+  if(S.checks.size){ L.push('EXAME CLÍNICO'); CHECKS.filter(c=>S.checks.has(c.id)).forEach(c=>L.push('- '+c.label)); L.push(''); }
+  L.push('PLANO SUGERIDO'); buildPlan().forEach((p,i)=>L.push(`${i+1}. [${PRI_LABEL[p.pri][0]}] ${p.area}: ${p.proc}. ${p.txt}`));
+  L.push('','Ferramenta de apoio baseada em fotografia 2D. Indicação final sujeita a exame clínico e julgamento do profissional.');
+  return L.join('\n');
+}
+$('btnCopy').onclick=async()=>{ const t=reportText(); try{ await navigator.clipboard.writeText(t); toast('Relatório copiado'); }catch(e){ const ta=document.createElement('textarea'); ta.value=t; ta.style.cssText='width:100%;height:260px;margin-top:12px;font:13px/1.4 monospace;border:1px solid var(--line);border-radius:10px;padding:10px'; $('plan').parentElement.parentElement.appendChild(ta); ta.select(); toast('Selecione e copie o texto abaixo'); } };
+let dl=null; (async()=>{ try{ if(window.claude&&claude.use) dl=await claude.use('downloads'); }catch(e){} })();
+$('btnPng').onclick=async()=>{
+  const s=A(); if(!s) return; render();
+  const name=`analise-hof-${VIEW_NAME[s.view].toLowerCase()}-${($('pName').value||'paciente').trim().replace(/\s+/g,'-')}.png`;
+  if(dl){ try{ const blob=await new Promise(r=>cv.toBlob(r,'image/png')); await dl.save({filename:name,data:blob}); toast('Imagem salva'); }catch(e){ if(e&&e.code!=='declined') toast('Não foi possível salvar: '+(e.message||e.code||'erro')); } return; }
+  try{ const a=document.createElement('a'); a.download=name; a.href=cv.toDataURL('image/png'); document.body.appendChild(a); a.click(); a.remove(); }catch(e){ toast('Download bloqueado aqui. Toque e segure a imagem para salvar.'); }
+};
+// pré-carrega o motor em segundo plano
+setTimeout(async()=>{ const el=$('engineStatus'), t0=performance.now();
+  try{ await getEngine();
+    // autoteste: imagem em branco deve rodar sem erro (sem rosto)
+    const c=document.createElement('canvas'); c.width=64; c.height=64; ENGINE.detect(c);
+    el.innerHTML=`<span class="chip ok">Motor de detecção facial pronto</span> <span style="font-size:.8rem">(${fmt((performance.now()-t0)/1000,1)} s)</span>`; }
+  catch(e){ el.innerHTML=`<span class="chip bad">Detecção automática indisponível</span> <span style="font-size:.8rem">${String(e&&e.message||e).slice(0,160)}</span> — marque os pontos manualmente.`; }
+}, 400);
+// ---------- App instalável (PWA) ----------
+(function(){
+  const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+  let inArtifact=false; try{ inArtifact = window.top!==window.self; }catch(e){ inArtifact=true; }
+  if('serviceWorker' in navigator && (location.protocol==='https:'||location.hostname==='localhost') && !inArtifact){
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  }
+  if(standalone || inArtifact) return;
+  let deferred=null;
+  window.addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); deferred=e; $('installBar').classList.remove('hidden'); });
+  $('btnInstall').onclick=async()=>{ if(!deferred) return; deferred.prompt(); try{ await deferred.userChoice; }catch(e){} deferred=null; $('installBar').classList.add('hidden'); };
+  const iOS=/iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+  if(iOS && location.protocol==='https:'){ $('installTxt').innerHTML='Para instalar no iPhone: toque em <b>Compartilhar</b> (□↑) e depois em <b>Adicionar à Tela de Início</b>.'; $('btnInstall').classList.add('hidden'); $('installBar').classList.remove('hidden'); }
+  window.addEventListener('appinstalled',()=>{ $('installBar').classList.add('hidden'); toast('App instalado'); });
+})();
+window.__hof={S,analyzeAll,autoDetect,extractSilhouette,render};
+</script>
+</body>
+</html>
