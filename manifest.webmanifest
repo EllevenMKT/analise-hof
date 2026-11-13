@@ -1,6 +1,6 @@
 {
-  "name": "Análise Facial HOF",
-  "short_name": "Análise HOF",
+  "name": "Angevie Harmonia",
+  "short_name": "Angevie",
   "description": "Análise facial automática para Harmonização Orofacial: proporções, simetria, perfil e plano sugerido.",
   "lang": "pt-BR",
   "start_url": "./",
@@ -8,7 +8,7 @@
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#f6f3ef",
-  "theme_color": "#8b5e48",
+  "theme_color": "#F8F3EE",
   "icons": [
     {"src": "icon-192.png", "sizes": "192x192", "type": "image/png"},
     {"src": "icon-512.png", "sizes": "512x512", "type": "image/png"},

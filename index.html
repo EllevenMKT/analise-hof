@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#8b5e48">
+<meta name="theme-color" content="#F8F3EE">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -13,17 +13,18 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <title>Análise Facial HOF</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,500&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#f6f3ef; --card:#ffffff; --ink:#1f1c1a; --muted:#6f6760; --line:#e6dfd7;
-  --accent:#8b5e48; --accent-soft:#f3e9e2; --ok:#2f7d5b; --ok-soft:#e5f3ec;
+  --bg:#F8F3EE; --card:#ffffff; --ink:#3A2B26; --muted:#6B564E; --line:#E8DDD2;
+  --accent:#B7715F; --accent-deep:#96543F; --accent-soft:#F1E8DF; --gold:#C9A06D; --ink-deep:#241A17; --ok:#2f7d5b; --ok-soft:#e5f3ec;
   --warn:#b7791f; --warn-soft:#fbf1df; --bad:#b4433a; --bad-soft:#f8e6e4;
   --r:14px;
 }
 *{box-sizing:border-box}
-html,body{margin:0;background:var(--bg);color:var(--ink);font-family:'DM Sans',system-ui,sans-serif;font-size:15px;line-height:1.5}
-h1,h2,h3{font-family:'Fraunces',Georgia,serif;font-weight:600;margin:0;letter-spacing:-.01em}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:'Jost',system-ui,sans-serif;font-size:15px;line-height:1.5}
+h1,h2,h3{font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;margin:0;letter-spacing:0}
+h2{font-size:1.45rem!important} h3{font-size:1.15rem!important}
 h1{font-size:1.65rem} h2{font-size:1.25rem;margin-bottom:.75rem} h3{font-size:1.02rem;margin-bottom:.4rem}
 .wrap{max-width:1200px;margin:0 auto;padding:calc(20px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right)) calc(60px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left))}
 .camrow{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:12px}
@@ -99,7 +100,7 @@ td.v{font-variant-numeric:tabular-nums;white-space:nowrap}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:14px}
 .kpi{background:#faf7f3;border:1px solid var(--line);border-radius:12px;padding:10px 12px}
 .kpi span{display:block;font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
-.kpi b{font-size:1.2rem;font-family:'Fraunces',serif}
+.kpi b{font-size:1.35rem;font-family:'Cormorant Garamond',serif}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 18px;border-radius:99px;font-size:.9rem;opacity:0;pointer-events:none;transition:.25s;z-index:9}
 .toast.show{opacity:1}
 .pointlist{display:flex;flex-wrap:wrap;gap:4px;margin-top:10px}
@@ -109,30 +110,174 @@ td.v{font-variant-numeric:tabular-nums;white-space:nowrap}
 .pointlist span.opt{border:1px dashed #cdbfb2}
 .vhead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:18px 0 8px}
 .vhead:first-child{margin-top:0}
+
+/* ===== Telas ===== */
+.screen{min-height:100vh;min-height:100dvh;display:flex;flex-direction:column}
+.screen>.grow{flex:1}
+#splash{position:fixed;inset:0;z-index:50;background:radial-gradient(120% 90% at 50% 20%,#FFFDFB 0%,#F8F3EE 55%,#F1E8DF 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 28px calc(32px + env(safe-area-inset-bottom));transition:opacity .5s ease, visibility .5s}
+#splash.out{opacity:0;visibility:hidden}
+.spl-mark{width:min(34vw,150px);filter:drop-shadow(0 10px 24px rgba(150,84,63,.18));animation:breathe 3.2s ease-in-out infinite}
+@keyframes breathe{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-4px) scale(1.02)}}
+.spl-name{font-family:'Cormorant Garamond',serif;font-size:clamp(2.1rem,8vw,3.1rem);font-weight:500;letter-spacing:.06em;margin-top:22px;text-align:center;color:var(--ink-deep);line-height:1.05}
+.spl-name em{display:block;font-style:normal;font-size:.42em;letter-spacing:.42em;text-transform:uppercase;color:var(--gold);margin-bottom:8px;font-family:'Jost',sans-serif;font-weight:500}
+.spl-tag{color:var(--muted);margin-top:10px;font-size:.98rem;text-align:center;letter-spacing:.02em}
+.spl-load{width:min(78vw,360px);margin-top:42px}
+.spl-bar{height:6px;border-radius:99px;background:rgba(183,113,95,.14);overflow:hidden;position:relative}
+.spl-bar i{position:absolute;left:0;top:0;bottom:0;width:0;border-radius:99px;background:linear-gradient(90deg,var(--gold),var(--accent));transition:width .25s linear}
+.spl-bar i::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);animation:shine 1.4s linear infinite}
+@keyframes shine{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
+.spl-row{display:flex;justify-content:space-between;align-items:baseline;margin-top:10px;font-size:.86rem;color:var(--muted)}
+.spl-row b{font-weight:600;color:var(--accent-deep);font-variant-numeric:tabular-nums}
+.spl-steps{list-style:none;padding:0;margin:16px 0 0;display:grid;gap:6px;font-size:.84rem;color:#a39087}
+.spl-steps li{display:flex;gap:8px;align-items:center;transition:color .3s}
+.spl-steps li::before{content:"";width:14px;height:14px;border-radius:50%;border:1.5px solid #d9c9bd;flex:none;box-sizing:border-box}
+.spl-steps li.on{color:var(--ink)} .spl-steps li.on::before{border-color:var(--accent);border-top-color:transparent;animation:sp .8s linear infinite}
+.spl-steps li.ok{color:var(--ink)} .spl-steps li.ok::before{border:none;background:var(--accent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 8.5l2.5 2.5L12 5.5' fill='none' stroke='white' stroke-width='2'/%3E%3C/svg%3E") center/12px no-repeat}
+.spl-steps li.err{color:var(--bad)}
+.spl-enter{margin-top:26px;opacity:0;transform:translateY(8px);transition:.4s;pointer-events:none;padding:14px 42px;font-size:1rem;letter-spacing:.08em;text-transform:uppercase;border-radius:99px}
+.spl-enter.show{opacity:1;transform:none;pointer-events:auto}
+.spl-foot{position:absolute;bottom:calc(16px + env(safe-area-inset-bottom));font-size:.75rem;color:#a39087;letter-spacing:.04em}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:calc(12px + env(safe-area-inset-top)) 16px 12px;background:rgba(248,243,238,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
+.brand{display:flex;align-items:center;gap:10px;cursor:pointer}
+.brand img{width:34px;height:auto}
+.topbar .btns{flex-wrap:nowrap}
+@media(max-width:420px){.brand small{display:none}.brand b{font-size:1.12rem}.topbar .btn.small{padding:6px 9px;font-size:.8rem}}
+.brand b{font-family:'Cormorant Garamond',serif;font-size:1.3rem;font-weight:600;letter-spacing:.04em;color:var(--ink-deep);line-height:1}
+.brand small{display:block;font-size:.66rem;letter-spacing:.24em;text-transform:uppercase;color:var(--gold);margin-top:3px}
+.hero{max-width:760px;margin:0 auto;padding:28px 20px 10px;text-align:center}
+.hero img.lock{width:min(82vw,420px);margin:6px auto 18px;display:block}
+.hero h1{font-size:clamp(1.9rem,6.5vw,2.6rem);font-weight:500;line-height:1.1}
+.hero p{color:var(--muted);margin:.7rem auto 0;max-width:520px}
+.home-actions{display:grid;gap:12px;max-width:520px;margin:26px auto 0;padding:0 20px}
+.bigbtn{display:flex;align-items:center;gap:14px;text-align:left;padding:16px 18px;border-radius:16px;border:1px solid var(--line);background:#fff;font:inherit;color:var(--ink);cursor:pointer;transition:.15s}
+.bigbtn:hover{border-color:var(--gold);transform:translateY(-1px)}
+.bigbtn .ic{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font-size:1.3rem;background:var(--accent-soft);flex:none}
+.bigbtn b{display:block;font-size:1.02rem} .bigbtn small{color:var(--muted)}
+.bigbtn.primary{background:linear-gradient(135deg,var(--accent),var(--accent-deep));border-color:transparent;color:#fff}
+.bigbtn.primary .ic{background:rgba(255,255,255,.18)} .bigbtn.primary small{color:rgba(255,255,255,.85)}
+.home-info{max-width:520px;margin:18px auto 0;padding:0 20px}
+.foot{text-align:center;font-size:.8rem;color:var(--muted);padding:22px 16px calc(18px + env(safe-area-inset-bottom));border-top:1px solid var(--line);margin-top:28px;letter-spacing:.03em}
+.foot b{color:var(--accent-deep);font-weight:600}
+details.anam{margin-top:14px;border:1px solid var(--line);border-radius:12px;background:#fdfbf9}
+details.anam>summary{cursor:pointer;list-style:none;padding:12px 14px;font-weight:600;display:flex;justify-content:space-between;align-items:center}
+details.anam>summary::-webkit-details-marker{display:none}
+details.anam>summary::after{content:"＋";color:var(--accent)} details.anam[open]>summary::after{content:"－"}
+details.anam .body{padding:0 14px 14px;display:grid;gap:12px}
+.anam h4{margin:6px 0 0;font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);font-weight:600}
+.anam textarea{width:100%;min-height:64px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;font:inherit;resize:vertical}
+.chk{display:grid;gap:6px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+.chk label{display:flex;gap:8px;align-items:flex-start;font-weight:500;color:var(--ink);font-size:.9rem;margin:0;cursor:pointer}
+.chk input{margin-top:3px;accent-color:var(--accent)}
+.agepill{display:inline-block;margin-top:6px;font-size:.8rem;color:var(--accent-deep);background:var(--accent-soft);padding:2px 10px;border-radius:99px}
+.alert{border-radius:12px;padding:12px 14px;margin-bottom:10px;border:1px solid}
+.alert.bad{background:var(--bad-soft);border-color:#eec3bf} .alert.warn{background:var(--warn-soft);border-color:#efd9b2} .alert.info{background:#f2f0ee;border-color:var(--line)}
+.alert b{display:block}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header class="top">
-    <div>
-      <span class="badge">Harmonização Orofacial · apoio à avaliação</span>
-      <h1 style="margin-top:8px">Análise facial automática</h1>
-      <p>Envie fotos frontal e/ou de perfil: a vista é identificada sozinha, os pontos são detectados e o plano é montado.</p>
+<!-- ===== ENTRADA ===== -->
+<div id="splash">
+  <img class="spl-mark" src="logo-mark.png" alt="">
+  <div class="spl-name"><em>Clínica Angevie</em><span class="app-name">Angevie Harmonia</span></div>
+  <div class="spl-tag app-tag">Análise facial inteligente para HOF</div>
+  <div class="spl-load">
+    <div class="spl-bar"><i id="splBar"></i></div>
+    <div class="spl-row"><span id="splStep">Iniciando…</span><b id="splPct">0%</b></div>
+    <ul class="spl-steps" id="splSteps">
+      <li data-k="ui">Interface e identidade visual</li>
+      <li data-k="motor">Motor de visão computacional</li>
+      <li data-k="modelo">Modelo facial de 478 pontos</li>
+      <li data-k="calib">Calibração da detecção</li>
+    </ul>
+  </div>
+  <button class="btn primary spl-enter" id="btnEnter">Entrar</button>
+  <div class="spl-foot">Desenvolvido por Elleven Marketing Digital</div>
+</div>
+
+<!-- ===== INÍCIO ===== -->
+<div id="home" class="screen hidden">
+  <div class="grow">
+    <div class="hero">
+      <img class="lock" src="logo-lockup.png" alt="Clínica Angevie · Dra. Aline Simei Sales">
+      <span class="badge">Harmonização Orofacial</span>
+      <h1 style="margin-top:12px"><span class="app-name">Angevie Harmonia</span></h1>
+      <p>Proporções, simetria e perfil analisados automaticamente a partir da foto, com plano de tratamento sugerido.</p>
     </div>
-    <button class="btn small" id="btnReset">Novo paciente</button>
-  </header>
+    <div class="home-actions">
+      <button class="bigbtn primary" id="goNew"><span class="ic">✦</span><span><b>Nova avaliação</b><small>Cadastro, anamnese, fotos e análise</small></span></button>
+      <button class="bigbtn" id="goResume" style="display:none"><span class="ic">↺</span><span><b>Continuar avaliação</b><small id="resumeName"></small></span></button>
+      <button class="bigbtn" id="goGuide"><span class="ic">📷</span><span><b>Como fotografar</b><small>Frontal e perfil padronizados</small></span></button>
+    </div>
+    <div class="home-info">
+      <div class="note hidden" id="guideBox">
+        <b>Frontal:</b> rosto de frente, olhar na câmera, expressão neutra, lábios em contato, cabelo preso, sem óculos.<br>
+        <b>Perfil:</b> rosto a 90°, olhar no horizonte, pescoço visível. Fundo liso ajuda, mas não é obrigatório.<br>
+        <b>Sempre:</b> câmera na altura do rosto a ~1 m, luz uniforme, sem filtro e sem zoom digital.
+      </div>
+      <div id="homeEngine" style="margin-top:12px;text-align:center;font-size:.85rem;color:var(--muted)"></div>
+    </div>
+  </div>
+  <footer class="foot">Desenvolvido por <b>Elleven Marketing Digital</b></footer>
+</div>
+
+<!-- ===== AVALIAÇÃO ===== -->
+<div id="appScreen" class="screen hidden">
+<div class="topbar">
+  <div class="brand" id="goHome"><img src="logo-mark.png" alt=""><div><b class="app-name">Angevie Harmonia</b><small>Clínica Angevie</small></div></div>
+  <div class="btns"><button class="btn small" id="btnHome">Início</button><button class="btn small" id="btnReset">Novo paciente</button></div>
+</div>
+<div class="wrap grow">
 
   <div class="install hidden" id="installBar"><p id="installTxt">Instale o app no celular: abre em tela cheia e funciona sem internet.</p><button class="btn small" id="btnInstall">Instalar app</button></div>
   <section class="grid two">
     <div class="card">
       <h2>1. Paciente</h2>
       <div class="row">
-        <div><label for="pName">Nome / identificação</label><input type="text" id="pName" placeholder="Ex.: Maria S."></div>
+        <div><label for="pName">Nome do paciente</label><input type="text" id="pName" placeholder="Nome completo" autocomplete="off"></div>
+        <div><label for="pBirth">Data de nascimento</label><input type="date" id="pBirth"><span class="agepill hidden" id="pAge"></span></div>
         <div><label for="pSex">Referência estética</label>
           <select id="pSex"><option value="F">Feminina</option><option value="M">Masculina</option></select></div>
         <div><label for="pIpd">Distância interpupilar (mm)</label><input type="number" id="pIpd" placeholder="automático (íris)" min="45" max="80" step="0.5"></div>
       </div>
       <p class="note" style="margin-top:12px">A escala em milímetros é calculada pelo diâmetro da íris (≈11,7 mm, praticamente constante em adultos). Se você medir a distância interpupilar com régua ou pupilômetro, preencha acima para maior precisão na foto frontal.</p>
+      <details class="anam" id="anam">
+        <summary><span>Ficha de anamnese <span style="font-weight:400;color:var(--muted)">(opcional)</span></span></summary>
+        <div class="body">
+          <div><label for="aQueixa">Queixa principal / o que deseja melhorar</label><textarea id="aQueixa" placeholder="Ex.: olheiras, contorno do rosto, lábios mais definidos…"></textarea></div>
+          <h4>Procedimentos anteriores</h4>
+          <div class="chk" id="aPrev">
+            <label><input type="checkbox" value="toxina"> Toxina botulínica</label>
+            <label><input type="checkbox" value="ah"> Ácido hialurônico</label>
+            <label><input type="checkbox" value="bio"> Bioestimulador de colágeno</label>
+            <label><input type="checkbox" value="fios"> Fios de sustentação</label>
+            <label><input type="checkbox" value="pmma"> PMMA / silicone / preenchedor permanente</label>
+            <label><input type="checkbox" value="cirurgia"> Cirurgia facial / rinoplastia</label>
+          </div>
+          <div><label for="aPrevTxt">Quando, onde e qual região</label><input type="text" id="aPrevTxt" placeholder="Ex.: AH em lábios há 8 meses"></div>
+          <h4>Saúde</h4>
+          <div class="chk" id="aHealth">
+            <label><input type="checkbox" value="gestante"> Gestante ou amamentando</label>
+            <label><input type="checkbox" value="autoimune"> Doença autoimune</label>
+            <label><input type="checkbox" value="neuromuscular"> Doença neuromuscular (ex.: miastenia)</label>
+            <label><input type="checkbox" value="coagulacao"> Distúrbio de coagulação</label>
+            <label><input type="checkbox" value="anticoag"> Usa anticoagulante / AAS</label>
+            <label><input type="checkbox" value="herpes"> Herpes labial recorrente</label>
+            <label><input type="checkbox" value="queloide"> Tendência a queloide</label>
+            <label><input type="checkbox" value="isotretinoina"> Isotretinoína nos últimos 6 meses</label>
+            <label><input type="checkbox" value="aminoglicosideo"> Antibiótico aminoglicosídeo em uso</label>
+            <label><input type="checkbox" value="infeccao"> Infecção ou lesão ativa na face</label>
+            <label><input type="checkbox" value="diabetes"> Diabetes</label>
+            <label><input type="checkbox" value="hipertensao"> Hipertensão</label>
+            <label><input type="checkbox" value="tabagismo"> Tabagismo</label>
+          </div>
+          <div class="row">
+            <div><label for="aAlerg">Alergias</label><input type="text" id="aAlerg" placeholder="Ex.: lidocaína, dipirona, látex"></div>
+            <div><label for="aMeds">Medicamentos em uso</label><input type="text" id="aMeds" placeholder="Nome e dose"></div>
+          </div>
+          <div><label for="aExpect">Expectativas e observações</label><textarea id="aExpect" placeholder="Resultado esperado, eventos importantes, restrições…"></textarea></div>
+          <div class="chk"><label><input type="checkbox" id="aTcle"> Termo de consentimento (TCLE) assinado</label></div>
+        </div>
+      </details>
     </div>
     <div class="card">
       <h2>2. Fotos</h2>
@@ -217,7 +362,7 @@ td.v{font-variant-numeric:tabular-nums;white-space:nowrap}
       </div>
       <p style="margin:.4rem 0 14px;color:var(--muted);font-size:.9rem">Integra os achados de todas as fotos e do exame clínico, por prioridade: estruturação e suporte primeiro, refinamentos depois.</p>
       <div class="grid two">
-        <div id="plan"></div>
+        <div><div id="anamAlerts"></div><div id="plan"></div></div>
         <div>
           <h3>Sequência clínica recomendada</h3>
           <ol class="steps" id="seq"></ol>
@@ -227,6 +372,8 @@ td.v{font-variant-numeric:tabular-nums;white-space:nowrap}
       </div>
     </div>
   </section>
+</div>
+<footer class="foot">Desenvolvido por <b>Elleven Marketing Digital</b></footer>
 </div>
 <div class="toast" id="toast"></div>
 
@@ -341,22 +488,28 @@ function loadFile(f){
 //  MOTOR DE DETECÇÃO (MediaPipe Face Landmarker, arquivos locais)
 // =====================================================================
 let ENGINE=null, ENGINE_ERR=null, ENGINE_ALT=null, ALT=null, MOD=null, FS=null, SEG=null, SEG_ERR=null, MOBILE=false;
-async function getEngine(){
+let ENGINE_P=null;
+function getEngine(){ return ENGINE_P||(ENGINE_P=_getEngine()); }
+const bootStep=(k)=>{ try{ window.__bootStep&&window.__bootStep(k); }catch(e){} };
+async function _getEngine(){
   if(ENGINE) return ENGINE;
   if(ENGINE_ERR) throw ENGINE_ERR;
   const base=new URL('./', document.baseURI).href;
   try{
+    bootStep('motor');
     const mod=await import(base+'vision_bundle.mjs');
+    bootStep('modelo');
     const fs={wasmLoaderPath:base+'vision_wasm_internal.js', wasmBinaryPath:base+'vision_wasm_internal.wasm'};
     // modelo embutido como base64 em um .js (carregado por <script>, aceito por qualquer hospedagem)
     if(!window.__HOF_MODEL_B64) await new Promise((ok,err)=>{ const sc=document.createElement('script'); sc.src=base+'face_model.js'; sc.onload=ok; sc.onerror=()=>err(new Error('modelo não carregou')); document.head.appendChild(sc); });
+    bootStep('modelo2');
     const bin=atob(window.__HOF_MODEL_B64); const buf=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) buf[i]=bin.charCodeAt(i); window.__HOF_MODEL_B64=null;
     const opts=d=>({baseOptions:{modelAssetBuffer:buf,delegate:d},runningMode:'IMAGE',numFaces:1,
       minFaceDetectionConfidence:0.3,minFacePresenceConfidence:0.3,outputFacialTransformationMatrixes:true});
     const mobile=/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1); MOD=mod; FS=fs; MOBILE=mobile;
     const first=mobile?'CPU':'GPU', second=mobile?'GPU':'CPU';
     let lm; try{ lm=await mod.FaceLandmarker.createFromOptions(fs,opts(first)); }catch(e){ lm=await mod.FaceLandmarker.createFromOptions(fs,opts(second)); }
-    ENGINE=lm; ENGINE_ALT=()=>ALT||(ALT=mod.FaceLandmarker.createFromOptions(fs,opts(second)).catch(()=>null)); return lm;
+    bootStep('calib'); ENGINE=lm; ENGINE_ALT=()=>ALT||(ALT=mod.FaceLandmarker.createFromOptions(fs,opts(second)).catch(()=>null)); return lm;
   }catch(e){ ENGINE_ERR=e; throw e; }
 }
 // segmentação de pessoa (cabelo, pele do rosto, corpo, roupa, fundo) para separar o perfil de fundos poluídos
@@ -749,14 +902,14 @@ function render(){
     ctx.beginPath(); ctx.arc(q.x,q.y,lw*2.8,0,Math.PI*2);
     ctx.fillStyle=(S.drag===p.id)?'#ffd166':'#ffffff'; ctx.fill(); ctx.lineWidth=lw; ctx.strokeStyle='#8b5e48'; ctx.stroke();
     if($('tgLabels').checked || !s.result){ const label=$('tgLabels').checked?p.name:String(i+1);
-      ctx.font=`600 ${Math.round(lw*7)}px DM Sans, sans-serif`; ctx.lineWidth=lw*2.2; ctx.strokeStyle='rgba(0,0,0,.65)';
+      ctx.font=`600 ${Math.round(lw*7)}px Jost, sans-serif`; ctx.lineWidth=lw*2.2; ctx.strokeStyle='rgba(0,0,0,.65)';
       ctx.strokeText(label,q.x+lw*4.5,q.y-lw*3.5); ctx.fillStyle='#fff'; ctx.fillText(label,q.x+lw*4.5,q.y-lw*3.5); }
   });
   if(s.result && $('tgIssues').checked) drawIssues(s,lw);
   if(S.loupe) drawLoupe(s,S.loupe);
 }
 function line(a,b,col,w,dash){ ctx.save(); if(dash) ctx.setLineDash(dash); ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.strokeStyle=col; ctx.lineWidth=w; ctx.stroke(); ctx.restore(); }
-function label(txt,p,col,lw,align){ ctx.font=`600 ${Math.round(lw*7.5)}px DM Sans, sans-serif`; const w=ctx.measureText(txt).width; const x=align==='left'?p.x-w:p.x;
+function label(txt,p,col,lw,align){ ctx.font=`600 ${Math.round(lw*7.5)}px Jost, sans-serif`; const w=ctx.measureText(txt).width; const x=align==='left'?p.x-w:p.x;
   ctx.lineWidth=lw*2.4; ctx.strokeStyle='rgba(0,0,0,.72)'; ctx.strokeText(txt,x,p.y); ctx.fillStyle=col; ctx.fillText(txt,x,p.y); }
 function sevColor(s){ return s==='bad'?'#ff6b5e':s==='warn'?'#ffbe55':'#5fd39a'; }
 function drawFrontGuides(s,lw){
@@ -795,7 +948,7 @@ function drawIssues(s,lw){
     ctx.beginPath(); ctx.arc(p.x,p.y,R*1.7,0,Math.PI*2); ctx.strokeStyle=col; ctx.lineWidth=lw*1.2; ctx.setLineDash([lw*3,lw*2]); ctx.stroke(); ctx.setLineDash([]);
     const bx=p.x+R*1.8, by=p.y-R*1.8;
     ctx.beginPath(); ctx.arc(bx,by,R,0,Math.PI*2); ctx.fillStyle=col; ctx.fill(); ctx.lineWidth=lw; ctx.strokeStyle='#fff'; ctx.stroke();
-    ctx.font=`700 ${Math.round(R*1.15)}px DM Sans, sans-serif`; ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(String(i+1),bx,by+0.5); ctx.textAlign='start'; ctx.textBaseline='alphabetic';
+    ctx.font=`700 ${Math.round(R*1.15)}px Jost, sans-serif`; ctx.fillStyle='#fff'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(String(i+1),bx,by+0.5); ctx.textAlign='start'; ctx.textBaseline='alphabetic';
   }); });
 }
 function drawLoupe(s,p){
@@ -860,7 +1013,7 @@ $('btnMirror').onclick=()=>{ const s=A(); if(!s) return; s.mirrored=!s.mirrored;
   if(s.mesh) s.mesh=s.mesh.map(p=>({x:s.W-p.x,y:p.y,z:p.z}));
   if(complete(s)) analyzeAll(); render(); toast(s.mirrored?'Foto espelhada':'Espelhamento desfeito'); };
 ['tgIssues','tgGuides','tgPts','tgLabels'].forEach(id=>$(id).addEventListener('change',render));
-$('btnReset').onclick=()=>{ S.slots={front:null,profile:null}; S.active=null; S.checks.clear(); document.querySelectorAll('#checklist input').forEach(i=>i.checked=false); $('pName').value=''; ['work','results'].forEach(i=>$(i).classList.add('hidden')); window.scrollTo({top:0,behavior:'smooth'}); };
+$('btnReset').onclick=()=>{ resetPatient(); window.scrollTo({top:0,behavior:'smooth'}); toast('Novo paciente'); };
 $('pSex').addEventListener('change',()=>{ for(const v in S.slots) if(S.slots[v]) computeScale(S.slots[v]); analyzeAll(); });
 $('pIpd').addEventListener('change',()=>{ for(const v in S.slots) if(S.slots[v]) computeScale(S.slots[v]); analyzeAll(); });
 
@@ -1146,6 +1299,8 @@ function refreshResults(){
 }
 $('findings').addEventListener('click',e=>{ const v=e.target.dataset.show; if(!v) return; S.active=v; const s=A(); cv.width=s.W; cv.height=s.H; updateUI(); render(); $('work').scrollIntoView({behavior:'smooth'}); });
 function renderPlan(){
+  const al=(typeof anamAlerts==='function')?anamAlerts():[];
+  if($('anamAlerts')) $('anamAlerts').innerHTML = al.length?`<h3 style="margin-bottom:8px">Anamnese</h3>`+al.map(([sv,t,d])=>`<div class="alert ${sv}"><b>${t}</b><small>${d}</small></div>`).join(''):'';
   const plan=buildPlan();
   $('plan').innerHTML=plan.length?plan.map(p=>{ const [lab,cls]=PRI_LABEL[p.pri]; return `<div class="sug"><div class="head"><div><div class="area">${p.area}</div><b>${p.proc}</b></div><span class="chip ${cls}">${lab}</span></div><p>${p.txt}</p>${p.why.length?`<div class="why">↳ ${[...new Set(p.why)].join(' · ')}</div>`:''}</div>`; }).join('')
     :'<p style="color:var(--muted)">Nenhuma conduta sugerida pelas fotos. Marque os achados do exame clínico para montar o plano.</p>';
@@ -1165,7 +1320,16 @@ $('checklist').addEventListener('change',e=>{ const id=e.target.dataset.id; if(!
 // =====================================================================
 function reportText(){
   const L=[], d=new Date().toLocaleDateString('pt-BR');
-  L.push('ANÁLISE FACIAL – HOF',`Paciente: ${$('pName').value||'—'}   Data: ${d}   Referência: ${$('pSex').value==='F'?'feminina':'masculina'}`,'');
+  const age=ageFrom($('pBirth').value), bd=$('pBirth').value?new Date($('pBirth').value+'T12:00:00').toLocaleDateString('pt-BR'):'—';
+  L.push(`${APP_NAME.toUpperCase()} – CLÍNICA ANGEVIE`,`Paciente: ${$('pName').value||'—'}   Nascimento: ${bd}${age!=null?` (${age} anos)`:''}`,`Data da avaliação: ${d}   Referência estética: ${$('pSex').value==='F'?'feminina':'masculina'}`,'');
+  const an=anam(), al=anamAlerts();
+  if(an.queixa||an.health.length||an.prev.length||an.alerg||an.meds||an.expect){ L.push('ANAMNESE');
+    if(an.queixa) L.push('- Queixa principal: '+an.queixa);
+    if(an.prev.length||an.prevTxt) L.push('- Procedimentos anteriores: '+an.prev.map(p=>PREV_LABEL[p]).join(', ')+(an.prevTxt?' ('+an.prevTxt+')':''));
+    if(an.health.length) L.push('- Saúde: '+an.health.map(h=>HEALTH_LABEL[h]).join(', '));
+    if(an.alerg) L.push('- Alergias: '+an.alerg); if(an.meds) L.push('- Medicamentos: '+an.meds); if(an.expect) L.push('- Expectativas/observações: '+an.expect);
+    L.push('- TCLE: '+(an.tcle?'assinado':'não informado'),''); }
+  const crit=al.filter(x=>x[0]!=='info'); if(crit.length){ L.push('ALERTAS'); crit.forEach(([sv,t,dd])=>L.push(`! ${t}: ${dd}`)); L.push(''); }
   ['front','profile'].forEach(v=>{ const s=S.slots[v]; if(!s||!s.result) return; const r=s.result;
     L.push(`== ${VIEW_NAME[v].toUpperCase()} ==  (${s.method||'marcação manual'}; escala: ${s.scale.src})`);
     [...r.warnings].forEach(w=>L.push('! '+w));
@@ -1173,7 +1337,7 @@ function reportText(){
     L.push('Pontos a melhorar:'); const f=r.findings.filter(x=>x.sev!=='ok'); (f.length?f:[{title:'Sem desvios relevantes',detail:''}]).forEach((x,i)=>L.push(`  ${i+1}. ${x.title}${x.detail?': '+x.detail:''}`)); L.push(''); });
   if(S.checks.size){ L.push('EXAME CLÍNICO'); CHECKS.filter(c=>S.checks.has(c.id)).forEach(c=>L.push('- '+c.label)); L.push(''); }
   L.push('PLANO SUGERIDO'); buildPlan().forEach((p,i)=>L.push(`${i+1}. [${PRI_LABEL[p.pri][0]}] ${p.area}: ${p.proc}. ${p.txt}`));
-  L.push('','Ferramenta de apoio baseada em fotografia 2D. Indicação final sujeita a exame clínico e julgamento do profissional.');
+  L.push('','Ferramenta de apoio baseada em fotografia 2D. Indicação final sujeita a exame clínico e julgamento do profissional.','Desenvolvido por Elleven Marketing Digital');
   return L.join('\n');
 }
 $('btnCopy').onclick=async()=>{ const t=reportText(); try{ await navigator.clipboard.writeText(t); toast('Relatório copiado'); }catch(e){ const ta=document.createElement('textarea'); ta.value=t; ta.style.cssText='width:100%;height:260px;margin-top:12px;font:13px/1.4 monospace;border:1px solid var(--line);border-radius:10px;padding:10px'; $('plan').parentElement.parentElement.appendChild(ta); ta.select(); toast('Selecione e copie o texto abaixo'); } };
@@ -1184,14 +1348,87 @@ $('btnPng').onclick=async()=>{
   if(dl){ try{ const blob=await new Promise(r=>cv.toBlob(r,'image/png')); await dl.save({filename:name,data:blob}); toast('Imagem salva'); }catch(e){ if(e&&e.code!=='declined') toast('Não foi possível salvar: '+(e.message||e.code||'erro')); } return; }
   try{ const a=document.createElement('a'); a.download=name; a.href=cv.toDataURL('image/png'); document.body.appendChild(a); a.click(); a.remove(); }catch(e){ toast('Download bloqueado aqui. Toque e segure a imagem para salvar.'); }
 };
-// pré-carrega o motor em segundo plano
-setTimeout(async()=>{ const el=$('engineStatus'), t0=performance.now();
-  try{ await getEngine();
-    // autoteste: imagem em branco deve rodar sem erro (sem rosto)
+// =====================================================================
+//  ENTRADA (splash com carregamento real), TELAS E CADASTRO
+// =====================================================================
+const APP_NAME='Angevie Harmonia', APP_TAG='Análise facial inteligente para HOF';
+document.querySelectorAll('.app-name').forEach(e=>e.textContent=APP_NAME); document.querySelectorAll('.app-tag').forEach(e=>e.textContent=APP_TAG);
+document.title=APP_NAME;
+const BOOT={p:0,from:0,to:0,t0:0,done:false,ok:false,msg:''};
+const STAGES={ui:[0,12,'Preparando a interface'],motor:[12,38,'Carregando o motor de visão computacional'],modelo:[38,62,'Baixando o modelo facial de 478 pontos'],modelo2:[62,84,'Preparando o modelo facial'],calib:[84,100,'Calibrando a detecção']};
+const ORDER=['ui','motor','modelo','calib'];
+function markStep(k,state){ const li=document.querySelector(`#splSteps li[data-k="${k}"]`); if(li){ li.classList.remove('on','ok','err'); li.classList.add(state); } }
+window.__bootStep=k=>{ const st=STAGES[k]; if(!st) return; BOOT.from=Math.max(BOOT.p,st[0]); BOOT.to=st[1]; BOOT.t0=performance.now(); $('splStep').textContent=st[2]+'…';
+  const key=k==='modelo2'?'modelo':k; const idx=ORDER.indexOf(key); ORDER.forEach((o,i)=>{ if(i<idx) markStep(o,'ok'); else if(i===idx) markStep(o,'on'); }); };
+(function tick(){
+  if(!BOOT.done){ const el=(performance.now()-BOOT.t0)/1000; const target=BOOT.from+(BOOT.to-BOOT.from)*(1-Math.exp(-el/1.6))*0.92; BOOT.p=Math.max(BOOT.p,Math.min(target,BOOT.to-1)); }
+  else BOOT.p=Math.min(100,BOOT.p+(100-BOOT.p)*0.25+0.5);
+  $('splBar').style.width=BOOT.p.toFixed(1)+'%'; $('splPct').textContent=Math.round(BOOT.p)+'%';
+  if(BOOT.done && BOOT.p>=99.5){ $('splPct').textContent='100%'; $('btnEnter').classList.add('show'); return; }
+  requestAnimationFrame(tick);
+})();
+async function boot(){
+  const t0=performance.now();
+  window.__bootStep('ui');
+  try{ await Promise.race([document.fonts.ready, new Promise(r=>setTimeout(r,1500))]); }catch(e){}
+  await new Promise(r=>setTimeout(r,350));
+  try{
+    await getEngine();
     const c=document.createElement('canvas'); c.width=64; c.height=64; ENGINE.detect(c);
-    el.innerHTML=`<span class="chip ok">Motor de detecção facial pronto</span> <span style="font-size:.8rem">(${fmt((performance.now()-t0)/1000,1)} s)</span>`; }
-  catch(e){ el.innerHTML=`<span class="chip bad">Detecção automática indisponível</span> <span style="font-size:.8rem">${String(e&&e.message||e).slice(0,160)}</span> — marque os pontos manualmente.`; }
-}, 400);
+    ORDER.forEach(o=>markStep(o,'ok')); BOOT.ok=true;
+    $('splStep').textContent='Tudo pronto'; BOOT.msg=`<span class="chip ok">Detecção automática pronta</span> <span style="font-size:.8rem">(${fmt((performance.now()-t0)/1000,1)} s)</span>`;
+  }catch(e){
+    ORDER.forEach((o,i)=>markStep(o,i<1?'ok':'err'));
+    $('splStep').textContent='Detecção automática indisponível: a marcação manual continua funcionando';
+    BOOT.msg=`<span class="chip bad">Detecção automática indisponível</span> <span style="font-size:.8rem">${String(e&&e.message||e).slice(0,140)}</span> — marque os pontos manualmente.`;
+  }
+  BOOT.done=true; $('engineStatus').innerHTML=BOOT.msg; $('homeEngine').innerHTML=BOOT.msg;
+}
+boot();
+function show(screen){ ['home','appScreen'].forEach(id=>$(id).classList.toggle('hidden',id!==screen)); window.scrollTo(0,0);
+  const has=!!(S.slots.front||S.slots.profile||$('pName').value); $('goResume').style.display=(screen==='home'&&has)?'flex':'none'; $('resumeName').textContent=$('pName').value||'Paciente sem nome'; }
+$('btnEnter').onclick=()=>{ $('splash').classList.add('out'); show('home'); setTimeout(()=>$('splash').remove(),600); };
+$('goNew').onclick=()=>{ resetPatient(); show('appScreen'); setTimeout(()=>$('pName').focus(),200); };
+$('goResume').onclick=()=>show('appScreen');
+$('goGuide').onclick=()=>$('guideBox').classList.toggle('hidden');
+$('btnHome').onclick=()=>show('home'); $('goHome').onclick=()=>show('home');
+// idade
+function ageFrom(v){ if(!v) return null; const b=new Date(v+'T12:00:00'), n=new Date(); if(isNaN(b)) return null; let a=n.getFullYear()-b.getFullYear(); const m=n.getMonth()-b.getMonth(); if(m<0||(m===0&&n.getDate()<b.getDate())) a--; return (a>=0&&a<120)?a:null; }
+$('pBirth').addEventListener('change',()=>{ const a=ageFrom($('pBirth').value); const el=$('pAge'); if(a==null){ el.classList.add('hidden'); } else { el.textContent=`${a} anos`; el.classList.remove('hidden'); } renderPlan(); });
+// anamnese
+function anam(){ const q=id=>($(id).value||'').trim(), ch=id=>[...document.querySelectorAll(`#${id} input:checked`)].map(i=>i.value);
+  return {queixa:q('aQueixa'), prev:ch('aPrev'), prevTxt:q('aPrevTxt'), health:ch('aHealth'), alerg:q('aAlerg'), meds:q('aMeds'), expect:q('aExpect'), tcle:$('aTcle').checked}; }
+const PREV_LABEL={toxina:'toxina botulínica',ah:'ácido hialurônico',bio:'bioestimulador',fios:'fios',pmma:'preenchedor permanente (PMMA/silicone)',cirurgia:'cirurgia facial'};
+const HEALTH_LABEL={gestante:'gestante/amamentando',autoimune:'doença autoimune',neuromuscular:'doença neuromuscular',coagulacao:'distúrbio de coagulação',anticoag:'anticoagulante/AAS',herpes:'herpes labial recorrente',queloide:'tendência a queloide',isotretinoina:'isotretinoína < 6 meses',aminoglicosideo:'aminoglicosídeo em uso',infeccao:'infecção/lesão ativa na face',diabetes:'diabetes',hipertensao:'hipertensão',tabagismo:'tabagismo'};
+function anamAlerts(){
+  const a=anam(), h=new Set(a.health), out=[], age=ageFrom($('pBirth').value);
+  if(age!=null && age<18) out.push(['bad','Paciente menor de idade','Procedimentos estéticos exigem consentimento e presença do responsável legal; avaliar a real indicação.']);
+  if(h.has('gestante')) out.push(['bad','Gestante ou amamentando','Contraindicação para toxina botulínica e preenchedores: adiar os procedimentos.']);
+  if(h.has('neuromuscular')) out.push(['bad','Doença neuromuscular','Contraindicação para toxina botulínica.']);
+  if(h.has('aminoglicosideo')) out.push(['bad','Aminoglicosídeo em uso','Pode potencializar o efeito da toxina botulínica: aguardar o fim do tratamento.']);
+  if(h.has('infeccao')) out.push(['bad','Infecção ou lesão ativa na face','Não injetar na área até a resolução completa.']);
+  if(h.has('autoimune')) out.push(['warn','Doença autoimune','Avaliar atividade da doença; evitar procedimentos em fase ativa e preferir produtos reabsorvíveis.']);
+  if(h.has('coagulacao')||h.has('anticoag')) out.push(['warn','Risco de sangramento/hematoma','Avaliar com o médico assistente; preferir cânula; não suspender medicação sem orientação médica.']);
+  if(h.has('herpes')) out.push(['warn','Herpes labial recorrente','Considerar profilaxia antiviral antes de procedimentos perilabiais.']);
+  if(h.has('isotretinoina')) out.push(['warn','Isotretinoína recente','Cautela com procedimentos que agridem a pele (microagulhamento, peeling) e com cicatrização.']);
+  if(h.has('queloide')) out.push(['warn','Tendência a queloide','Cautela com procedimentos com perfuração extensa e fios.']);
+  if(a.prev.includes('pmma')) out.push(['warn','Preenchedor permanente prévio','Mapear as regiões tratadas: não sobrepor ácido hialurônico ou bioestimulador sem avaliação (risco de granuloma).']);
+  if(a.alerg) out.push(['warn','Alergias relatadas',a.alerg+' — conferir composição dos produtos (lidocaína, albumina etc.).']);
+  if(a.prev.includes('toxina')||a.prev.includes('ah')) out.push(['info','Procedimentos prévios',(a.prev.map(p=>PREV_LABEL[p]).join(', '))+(a.prevTxt?' — '+a.prevTxt:'')+'. Respeitar intervalos e avaliar resíduo de produto.']);
+  if(age!=null && age>=40) out.push(['info',`${age} anos`,'Considerar qualidade de pele e bioestimulação de colágeno no planejamento.']);
+  if(a.queixa) out.push(['info','Queixa principal',a.queixa]);
+  if((a.health.length||a.prev.length) && !a.tcle) out.push(['info','TCLE','Termo de consentimento ainda não marcado como assinado.']);
+  return out;
+}
+document.getElementById('anam').addEventListener('change',()=>renderPlan());
+document.getElementById('anam').addEventListener('input',e=>{ if(e.target.tagName==='TEXTAREA'||e.target.type==='text') { clearTimeout(window.__anT); window.__anT=setTimeout(renderPlan,400); } });
+function resetPatient(){
+  S.slots={front:null,profile:null}; S.active=null; S.checks.clear();
+  document.querySelectorAll('#checklist input, #anam input[type=checkbox]').forEach(i=>i.checked=false);
+  ['pName','pBirth','pIpd','aQueixa','aPrevTxt','aAlerg','aMeds','aExpect'].forEach(id=>$(id).value='');
+  $('pAge').classList.add('hidden'); $('anam').open=false;
+  ['work','results'].forEach(i=>$(i).classList.add('hidden'));
+}
 // ---------- App instalável (PWA) ----------
 (function(){
   const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
