@@ -1,6 +1,6 @@
 {
-  "name": "FaceCheck by Angevie",
-  "short_name": "FaceCheck",
+  "name": "FaceScan by Angevie",
+  "short_name": "FaceScan",
   "description": "Análise facial automática para Harmonização Orofacial: proporções, simetria, perfil e plano sugerido.",
   "lang": "pt-BR",
   "start_url": "./",
