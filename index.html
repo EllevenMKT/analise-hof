@@ -2615,11 +2615,55 @@ function traduzErro(m){ const t=String(m);
   if(/Password should be at least/i.test(t)) return 'A senha precisa ter pelo menos 6 caracteres';
   if(/Signups not allowed/i.test(t)) return 'Novos cadastros estão desativados neste projeto';
   if(/Invalid API key|No API key/i.test(t)) return 'Chave do projeto inválida: confira a anon key';
+  if(/rate limit|too many/i.test(t)) return 'Muitos pedidos de e-mail em pouco tempo. Aguarde cerca de 1 hora e tente de novo.';
+  if(/only request this after (\d+) seconds/i.test(t)) return 'Aguarde '+t.match(/after (\d+) seconds/i)[1]+' segundos para pedir outro e-mail.';
+  if(/Error sending (recovery|confirmation|magic link)? ?email/i.test(t)) return 'O servidor de e-mail da nuvem recusou o envio. Avise o suporte (configuração de e-mail do Supabase).';
+  if(/New password should be different/i.test(t)) return 'A nova senha precisa ser diferente da anterior.';
+  if(/User not found/i.test(t)) return 'Não existe conta com este e-mail.';
+  if(/not authorized/i.test(t)) return 'Este e-mail não está autorizado a receber e-mails do servidor padrão da nuvem. É preciso configurar um servidor de e-mail próprio no Supabase.';
   return t; }
 function setSess(j){ sessSave({access_token:j.access_token, refresh_token:j.refresh_token, expires_at:Math.floor(Date.now()/1000)+(j.expires_in||3600), user:{id:j.user.id, email:j.user.email}}); }
 async function cloudLogin(email,pw){ setSess(await authReq('token?grant_type=password',{email,password:pw})); }
 async function cloudSignup(email,pw){ const j=await authReq('signup',{email,password:pw}); if(j.access_token){ setSess(j); return true; } return false; }
-async function cloudRecover(email){ await authReq('recover',{email}); }
+async function cloudRecover(email){
+  const back=location.origin+location.pathname;
+  const r=await rawFetch(baseUrl()+'/auth/v1/recover?redirect_to='+encodeURIComponent(back),{method:'POST',headers:{apikey:CL.cfg.key,'Content-Type':'application/json'},body:JSON.stringify({email})});
+  if(!r.ok){ const j=await r.json().catch(()=>({})); throw new Error(traduzErro(j.msg||j.error_description||j.message||j.error||('erro '+r.status))); } }
+// ---------- retorno do link "esqueci a senha" (e-mail do Supabase) ----------
+function handleAuthLink(){
+  const h=location.hash.startsWith('#')?location.hash.slice(1):''; if(!h) return;
+  const p=new URLSearchParams(h);
+  const clean=()=>history.replaceState(null,'',location.pathname+location.search);
+  if(p.get('error')||p.get('error_code')){ clean();
+    const code=p.get('error_code')||'', d=p.get('error_description')||'';
+    const txt=/expired|otp_expired/i.test(code+d)?'Este link de recuperação expirou ou já foi usado. Peça um novo em Nuvem → Esqueci a senha.':'Não foi possível abrir o link: '+d.replace(/\+/g,' ');
+    setTimeout(()=>alert(txt),300); return; }
+  if(!p.get('access_token')) return;
+  const type=p.get('type'); const tok={access_token:p.get('access_token'),refresh_token:p.get('refresh_token'),expires_in:+p.get('expires_in')||3600};
+  clean(); cloudLoad(); if(!CL.cfg) return;
+  const getUser=async()=>{ const r=await rawFetch(baseUrl()+'/auth/v1/user',{headers:{apikey:CL.cfg.key,Authorization:'Bearer '+tok.access_token}}); if(!r.ok) throw new Error('Link inválido ou expirado. Peça um novo.'); return r.json(); };
+  if(type!=='recovery'){ // confirmação de cadastro: já entra
+    getUser().then(u=>{ setSess({...tok,user:u}); renderCloudChip(); toast('E-mail confirmado. Conectada à nuvem'); cloudSyncSoon(300); }).catch(e=>alert(e.message)); return; }
+  const ov=document.createElement('div');
+  ov.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(40,28,24,.55);display:flex;align-items:center;justify-content:center;padding:18px';
+  ov.innerHTML=`<div style="background:#fff;border-radius:20px;max-width:380px;width:100%;padding:24px 22px;box-shadow:0 20px 60px rgba(0,0,0,.3);font-family:inherit">
+    <h3 style="margin:0 0 6px;font-size:1.3rem">Criar nova senha</h3>
+    <p style="margin:0 0 14px;color:#6B564E;font-size:.9rem">Digite a nova senha da sua conta da nuvem (mínimo 6 caracteres).</p>
+    <input id="npw1" type="password" autocomplete="new-password" placeholder="Nova senha" style="width:100%;padding:12px;border:1px solid #E8DDD2;border-radius:12px;font:inherit;margin-bottom:8px">
+    <input id="npw2" type="password" autocomplete="new-password" placeholder="Repita a nova senha" style="width:100%;padding:12px;border:1px solid #E8DDD2;border-radius:12px;font:inherit">
+    <p id="npwMsg" style="min-height:1.2em;color:#B7715F;font-size:.85rem;margin:8px 0"></p>
+    <div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn" id="npwNo" type="button">Cancelar</button><button class="btn primary" id="npwOk" type="button">Salvar senha</button></div></div>`;
+  document.body.appendChild(ov);
+  const msg=t=>ov.querySelector('#npwMsg').textContent=t;
+  ov.querySelector('#npwNo').onclick=()=>ov.remove();
+  ov.querySelector('#npwOk').onclick=async()=>{ const a=ov.querySelector('#npw1').value, b=ov.querySelector('#npw2').value;
+    if(a.length<6) return msg('A senha precisa ter pelo menos 6 caracteres.'); if(a!==b) return msg('As senhas não conferem.');
+    msg('Salvando…');
+    try{ const r=await rawFetch(baseUrl()+'/auth/v1/user',{method:'PUT',headers:{apikey:CL.cfg.key,Authorization:'Bearer '+tok.access_token,'Content-Type':'application/json'},body:JSON.stringify({password:a})});
+      const j=await r.json().catch(()=>({})); if(!r.ok) throw new Error(traduzErro(j.msg||j.error_description||j.message||j.error||('erro '+r.status)));
+      const u=j.id?j:await getUser(); setSess({...tok,user:u}); ov.remove(); renderCloudChip(); toast('Senha alterada. Conectada à nuvem'); cloudSyncSoon(300);
+    }catch(e){ msg(e.message); } };
+}
 async function ensureToken(){
   if(!CL.sess) throw new Error('Entre na sua conta da nuvem');
   if(Date.now()/1000 < CL.sess.expires_at-90) return;
@@ -2804,6 +2848,7 @@ renderCloudChip();
   if(iOS && location.protocol==='https:'){ $('installTxt').innerHTML='Para instalar no iPhone: toque em <b>Compartilhar</b> (□↑) e depois em <b>Adicionar à Tela de Início</b>.'; $('btnInstall').classList.add('hidden'); $('installBar').classList.remove('hidden'); }
   window.addEventListener('appinstalled',()=>{ $('installBar').classList.add('hidden'); toast('App instalado'); });
 })();
+try{ handleAuthLink(); }catch(e){ console.warn(e); }
 window.__hof={S,analyzeAll,autoDetect,extractSilhouette,render};
 </script>
 </body>
