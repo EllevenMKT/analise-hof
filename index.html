@@ -2259,7 +2259,7 @@ async function boot(){
 boot();
 function show(screen){ ['home','appScreen','atlasScreen','patientsScreen','cloudScreen'].forEach(id=>$(id).classList.toggle('hidden',id!==screen)); window.scrollTo(0,0);
   const has=!!(S.slots.front||S.slots.profile||$('pName').value); $('goResume').style.display=(screen==='home'&&has)?'flex':'none'; $('resumeName').textContent=$('pName').value||'Paciente sem nome'; }
-$('btnEnter').onclick=()=>{ $('splash').classList.add('out'); show('home'); setTimeout(()=>$('splash').remove(),600); if(typeof cloudSyncSoon==='function') cloudSyncSoon(500); };
+$('btnEnter').onclick=()=>{ $('splash').classList.add('out'); setTimeout(()=>$('splash').remove(),600); if(cloudOn()) enterApp(); else showGate(); };
 $('goNew').onclick=()=>{ resetPatient(); show('appScreen'); setTimeout(()=>$('pName').focus(),200); };
 $('goResume').onclick=()=>show('appScreen');
 $('goGuide').onclick=()=>$('guideBox').classList.toggle('hidden');
@@ -2420,22 +2420,35 @@ function drawMuscles(s,lw){
   ctx.restore();
 }
 // =====================================================================
-//  BANCO DE PACIENTES (IndexedDB local) — salvar, buscar, reabrir, backup
+//  BANCO DE PACIENTES (somente nuvem; memória enquanto o app está aberto) — salvar, buscar, reabrir, backup
 // =====================================================================
 S.cur={patientId:null, evalId:null};
-const DB={db:null, err:null};
-function dbOpen(){ if(DB.db) return Promise.resolve(DB.db);
-  return new Promise((ok,err)=>{ let rq; try{ rq=indexedDB.open('facecheck',1); }catch(e){ DB.err=e; return err(e); }
-    rq.onupgradeneeded=()=>{ const d=rq.result; const p=d.createObjectStore('patients',{keyPath:'id'}); p.createIndex('nameKey','nameKey');
-      const e=d.createObjectStore('evals',{keyPath:'id'}); e.createIndex('patientId','patientId'); };
-    rq.onsuccess=()=>{ DB.db=rq.result; try{ navigator.storage&&navigator.storage.persist&&navigator.storage.persist(); }catch(e){} ok(DB.db); };
-    rq.onerror=()=>{ DB.err=rq.error; err(rq.error); }; }); }
-function tx(store,mode,fn){ return dbOpen().then(d=>new Promise((ok,err)=>{ const t=d.transaction(store,mode); const st=t.objectStore(store); const r=fn(st); t.oncomplete=()=>ok(r&&r.result!==undefined?r.result:r); t.onerror=()=>err(t.error); t.onabort=()=>err(t.error); })); }
-const dbPut=(store,obj)=>tx(store,'readwrite',st=>st.put(obj));
-const dbDel=(store,id)=>tx(store,'readwrite',st=>st.delete(id));
-const dbGet=(store,id)=>dbOpen().then(d=>new Promise((ok,err)=>{ const r=d.transaction(store).objectStore(store).get(id); r.onsuccess=()=>ok(r.result); r.onerror=()=>err(r.error); }));
-const dbAll=(store)=>dbOpen().then(d=>new Promise((ok,err)=>{ const r=d.transaction(store).objectStore(store).getAll(); r.onsuccess=()=>ok(r.result||[]); r.onerror=()=>err(r.error); }));
-const dbByPatient=(pid)=>dbOpen().then(d=>new Promise((ok,err)=>{ const r=d.transaction('evals').objectStore('evals').index('patientId').getAll(pid); r.onsuccess=()=>ok(r.result||[]); r.onerror=()=>err(r.error); }));
+// Cloud-only: nada de pacientes é gravado no aparelho. Os dados ficam só na memória
+// enquanto o app está aberto e são lidos/gravados na nuvem da conta logada.
+const MEM={patients:new Map(), evals:new Map()};
+const DB={db:true, err:null};
+function dbOpen(){ return Promise.resolve(true); }
+const dbPut=async(store,obj)=>{ MEM[store].set(obj.id,obj); };
+const dbDel=async(store,id)=>{ MEM[store].delete(id); };
+const dbGet=async(store,id)=>MEM[store].get(id);
+const dbAll=async store=>[...MEM[store].values()];
+const dbByPatient=async pid=>[...MEM.evals.values()].filter(e=>e.patientId===pid);
+const memDirty=()=>[...MEM.patients.values(),...MEM.evals.values()].some(x=>x.dirty);
+function memClear(){ MEM.patients.clear(); MEM.evals.clear(); }
+// dados de versões antigas guardados no aparelho: envia o que não subiu e depois apaga do aparelho
+async function legacyLoad(){
+  try{ if(indexedDB.databases){ const l=await indexedDB.databases(); if(!l.some(d=>d.name==='facecheck')) return 0; } }catch(e){}
+  return new Promise(ok=>{ let rq, fresh=false; try{ rq=indexedDB.open('facecheck'); }catch(e){ return ok(0); }
+    rq.onupgradeneeded=()=>{ fresh=true; }; rq.onerror=()=>ok(0); rq.onblocked=()=>ok(0);
+    rq.onsuccess=()=>{ const d=rq.result;
+      if(fresh||!d.objectStoreNames.contains('patients')||!d.objectStoreNames.contains('evals')){ d.close(); try{ indexedDB.deleteDatabase('facecheck'); }catch(e){} return ok(0); }
+      const t=d.transaction(['patients','evals']); const a=t.objectStore('patients').getAll(), b=t.objectStore('evals').getAll();
+      t.oncomplete=()=>{ d.close(); const ps=a.result||[], es=b.result||[]; let n=0;
+        for(const e of es) if(e.dirty||!e.synced){ MEM.evals.set(e.id,{...e,dirty:true}); n++; const pp=ps.find(x=>x.id===e.patientId); if(pp&&!MEM.patients.has(pp.id)) MEM.patients.set(pp.id,{...pp,dirty:true}); }
+        for(const pp of ps) if((pp.dirty||!pp.synced)&&!MEM.patients.has(pp.id)){ MEM.patients.set(pp.id,{...pp,dirty:true}); n++; }
+        ok(n); };
+      t.onerror=()=>{ d.close(); ok(0); }; }; }); }
+function legacyWipe(){ try{ indexedDB.deleteDatabase('facecheck'); }catch(e){} ['fc_sess','fc_tomb','fc_last'].forEach(k=>{ try{ localStorage.removeItem(k); }catch(e){} }); }
 const normName=t=>(t||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
 const fmtDate=iso=>{ try{ return new Date(iso).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'}); }catch(e){ return iso; } };
@@ -2459,6 +2472,7 @@ async function snapshotViews(){
 }
 async function savePatient(){
   const name=$('pName').value.trim();
+  if(!cloudOn()){ toast('Entre na sua conta para salvar'); showGate(); return; }
   if(!name){ toast('Preencha o nome do paciente antes de salvar'); $('pName').focus(); $('pName').scrollIntoView({behavior:'smooth',block:'center'}); return; }
   if(!S.slots.front&&!S.slots.profile){ const go=await ask('Salvar sem fotos?','Ainda não há fotos nesta avaliação. Deseja salvar só o cadastro e a anamnese?','Salvar'); if(!go) return; }
   try{
@@ -2477,9 +2491,12 @@ async function savePatient(){
     const thumbV=views.front||views.profile; if(thumbV) pat.thumb=thumbV.thumb;
     await dbPut('patients',pat); await dbPut('evals',ev);
     S.cur={patientId:pat.id, evalId:ev.id, evalDate:ev.date};
-    setSaveState(`Salvo em ${fmtDT(now)}`+(cloudOn()?' · enviando para a nuvem…':'')); toast('Paciente salvo'); refreshCount();
-    if(cloudOn()) cloudSync().then(ok=>setSaveState(`Salvo em ${fmtDT(now)}`+(ok?' · na nuvem ☁':' · '+(CL.err||'nuvem pendente'))));
-  }catch(e){ console.error(e); toast('Não foi possível salvar: '+(e&&e.message||e)); setSaveState('Erro ao salvar neste navegador. Use o app instalado (GitHub) para o banco de pacientes.'); }
+    setSaveState('Salvando na nuvem…'); toast('Salvando na nuvem…');
+    const ok=await syncNow(); const e2=MEM.evals.get(ev.id), p2=MEM.patients.get(pat.id);
+    if(ok && !(e2&&e2.dirty) && !(p2&&p2.dirty)){ setSaveState(`☁ Salvo na nuvem em ${fmtDT(now)}`); toast('Paciente salvo na nuvem ☁'); }
+    else { setSaveState('⚠ NÃO foi salvo na nuvem: '+(CL.err||'tente de novo')+'. Toque em Salvar novamente antes de sair.'); alert('Atenção: o paciente NÃO foi salvo na nuvem.\n\n'+(CL.err||'Erro desconhecido')+'\n\nConfira a internet e toque em Salvar novamente. Não feche o app antes disso.'); }
+    refreshCount();
+  }catch(e){ console.error(e); toast('Não foi possível salvar: '+(e&&e.message||e)); setSaveState('⚠ Erro ao salvar: '+(e&&e.message||e)); }
 }
 function setSaveState(t){ $('saveState').textContent=t; }
 $('btnSave').onclick=savePatient; $('btnSaveTop').onclick=savePatient;
@@ -2548,13 +2565,13 @@ async function openPatientDetail(pid){
   evs.forEach(ev=>['front','profile'].forEach(v=>{ const im=L.querySelector(`img[data-ev="${ev.id}"][data-v="${v}"]`); if(im&&ev.views[v].thumb) im.src=URL.createObjectURL(ev.views[v].thumb); }));
   $('ptToList').onclick=()=>{ D.classList.add('hidden'); $('ptListView').classList.remove('hidden'); loadPatients(); };
   $('ptNewEval').onclick=()=>{ resetPatient(); $('pName').value=p.name; $('pBirth').value=p.birth||''; $('pBirth').dispatchEvent(new Event('change')); $('pSex').value=p.sex||'F'; S.cur={patientId:p.id,evalId:null}; setSaveState('Nova avaliação de '+p.name+' · ainda não salva'); show('appScreen'); };
-  $('ptDel').onclick=async()=>{ if(!await ask('Excluir paciente?',`Isto apaga <b>${esc(p.name)}</b> e todas as ${evs.length} avaliações deste aparelho. Não dá para desfazer.`,'Excluir',true)) return;
+  $('ptDel').onclick=async()=>{ if(!await ask('Excluir paciente?',`Isto apaga <b>${esc(p.name)}</b> e todas as ${evs.length} avaliações da nuvem. Não dá para desfazer.`,'Excluir',true)) return;
     if(p.synced||evs.some(e=>e.synced)) addTomb('patients',p.id,evs.flatMap(evFiles));
     for(const ev of evs) await dbDel('evals',ev.id); await dbDel('patients',p.id); cloudSyncSoon(); if(S.cur.patientId===p.id) S.cur={patientId:null,evalId:null}; toast('Paciente excluído'); refreshCount(); $('ptToList').click(); };
   L.onclick=async e=>{ const o=e.target.dataset.open, c=e.target.dataset.copy, d=e.target.dataset.delev;
     if(o) openEval(o);
     if(c){ const ev=evs.find(x=>x.id===c); try{ await navigator.clipboard.writeText(ev.report||''); toast('Relatório copiado'); }catch(err){ toast('Não foi possível copiar aqui'); } }
-    if(d){ if(!await ask('Excluir avaliação?','A avaliação e as fotos dela serão apagadas'+(cloudOn()?' deste aparelho e da nuvem.':' deste aparelho.'),'Excluir',true)) return; { const evx=evs.find(x=>x.id===d); if(evx&&evx.synced) addTomb('evals',d,evFiles(evx)); } await dbDel('evals',d); cloudSyncSoon();
+    if(d){ if(!await ask('Excluir avaliação?','A avaliação e as fotos dela serão apagadas da nuvem.','Excluir',true)) return; { const evx=evs.find(x=>x.id===d); if(evx&&evx.synced) addTomb('evals',d,evFiles(evx)); } await dbDel('evals',d); cloudSyncSoon();
       const rest=evs.filter(x=>x.id!==d); if(rest.length){ p.lastEval=rest[0].date; const tv=rest[0].views&&(rest[0].views.front||rest[0].views.profile); p.thumb=tv?tv.thumb:null; p.updatedAt=new Date().toISOString(); p.dirty=true; await dbPut('patients',p); }
       if(S.cur.evalId===d) S.cur.evalId=null; toast('Avaliação excluída'); openPatientDetail(pid); } };
 }
@@ -2587,19 +2604,20 @@ refreshCount();
 const SETUP_SQL="-- =====================================================================\n--  FaceScan by Angevie \u2014 configura\u00e7\u00e3o do banco no Supabase\n--  Cole tudo no \"SQL Editor\" do Supabase e clique em RUN (uma vez s\u00f3).\n--  Cria as tabelas, as regras de seguran\u00e7a (cada conta s\u00f3 v\u00ea os pr\u00f3prios\n--  pacientes) e a pasta PRIVADA de fotos.\n-- =====================================================================\n\n-- Pacientes\ncreate table if not exists public.patients (\n  id          text primary key,\n  owner       uuid not null default auth.uid() references auth.users(id) on delete cascade,\n  name        text not null,\n  name_key    text not null,\n  birth       text,\n  sex         text,\n  thumb_path  text,\n  last_eval   timestamptz,\n  created_at  timestamptz not null default now(),\n  updated_at  timestamptz not null default now()\n);\n\n-- Avalia\u00e7\u00f5es (medidas, pontos, anamnese, plano e relat\u00f3rio em JSON; fotos no Storage)\ncreate table if not exists public.evals (\n  id          text primary key,\n  owner       uuid not null default auth.uid() references auth.users(id) on delete cascade,\n  patient_id  text not null references public.patients(id) on delete cascade,\n  date        timestamptz not null,\n  updated_at  timestamptz not null default now(),\n  data        jsonb not null\n);\ncreate index if not exists evals_patient_idx on public.evals(patient_id);\ncreate index if not exists patients_owner_idx on public.patients(owner);\ncreate index if not exists evals_owner_idx on public.evals(owner);\n\n-- Seguran\u00e7a: cada usu\u00e1rio s\u00f3 enxerga e altera o que \u00e9 dele\nalter table public.patients enable row level security;\nalter table public.evals    enable row level security;\n\ndrop policy if exists \"patients do proprio usuario\" on public.patients;\ncreate policy \"patients do proprio usuario\" on public.patients\n  for all to authenticated\n  using (owner = auth.uid()) with check (owner = auth.uid());\n\ndrop policy if exists \"evals do proprio usuario\" on public.evals;\ncreate policy \"evals do proprio usuario\" on public.evals\n  for all to authenticated\n  using (owner = auth.uid()) with check (owner = auth.uid());\n\n-- Pasta de fotos PRIVADA (sem link p\u00fablico). Cada usu\u00e1rio usa a pasta com o pr\u00f3prio id.\ninsert into storage.buckets (id, name, public)\nvalues ('fotos', 'fotos', false)\non conflict (id) do update set public = false;\n\ndrop policy if exists \"fotos: ler as proprias\" on storage.objects;\ncreate policy \"fotos: ler as proprias\" on storage.objects\n  for select to authenticated\n  using (bucket_id = 'fotos' and (storage.foldername(name))[1] = auth.uid()::text);\n\ndrop policy if exists \"fotos: enviar as proprias\" on storage.objects;\ncreate policy \"fotos: enviar as proprias\" on storage.objects\n  for insert to authenticated\n  with check (bucket_id = 'fotos' and (storage.foldername(name))[1] = auth.uid()::text);\n\ndrop policy if exists \"fotos: atualizar as proprias\" on storage.objects;\ncreate policy \"fotos: atualizar as proprias\" on storage.objects\n  for update to authenticated\n  using (bucket_id = 'fotos' and (storage.foldername(name))[1] = auth.uid()::text);\n\ndrop policy if exists \"fotos: apagar as proprias\" on storage.objects;\ncreate policy \"fotos: apagar as proprias\" on storage.objects\n  for delete to authenticated\n  using (bucket_id = 'fotos' and (storage.foldername(name))[1] = auth.uid()::text);\n";
 // =====================================================================
 //  NUVEM (Supabase) — cliente REST sem dependências + sincronização
-//  O banco local (IndexedDB) continua sendo a cópia de trabalho: o app
-//  funciona offline e sincroniza quando há internet e login.
+//  Os pacientes ficam somente na nuvem da conta logada.
 // =====================================================================
 const CLOUD_DEFAULT={url:'https://ttjtzkrgvtctstxgwmcj.supabase.co', key:'sb_publishable_v9iXWlPcashbkZZOUjO0JA_pSLtgESS'};   // preenchido quando o projeto Supabase for definido
 const BUCKET='fotos';
 const CL={cfg:null, sess:null, busy:false, last:null, err:null, queued:false};
 function lsGet(k,d){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):d; }catch(e){ return d; } }
 function lsSet(k,v){ try{ v==null?localStorage.removeItem(k):localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
-function cloudLoad(){ const c=lsGet('fc_cloud',null); CL.cfg=(c&&c.url&&c.key)?c:(CLOUD_DEFAULT.url&&CLOUD_DEFAULT.key?CLOUD_DEFAULT:null); CL.sess=lsGet('fc_sess',null); CL.last=lsGet('fc_last',null); }
+function ssGet(k){ try{ const v=sessionStorage.getItem(k); return v?JSON.parse(v):null; }catch(e){ return null; } }
+function ssSet(k,v){ try{ v==null?sessionStorage.removeItem(k):sessionStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
+function cloudLoad(){ const c=lsGet('fc_cloud',null); CL.cfg=(c&&c.url&&c.key)?c:(CLOUD_DEFAULT.url&&CLOUD_DEFAULT.key?CLOUD_DEFAULT:null); CL.sess=CL.sess||ssGet('fc_sess'); }
 cloudLoad();
 const cloudOn=()=>!!(CL.cfg&&CL.sess);
 const baseUrl=()=>CL.cfg.url.trim().replace(/\/+$/,'');
-function sessSave(s){ CL.sess=s; lsSet('fc_sess',s); }
+function sessSave(s){ CL.sess=s; ssSet('fc_sess',s); }
 class Offline extends Error{}
 async function rawFetch(url,opt){ try{ return await fetch(url,opt); }catch(e){ throw new Offline('Sem conexão com a nuvem'); } }
 async function authReq(path,body){
@@ -2643,7 +2661,7 @@ function handleAuthLink(){
   clean(); cloudLoad(); if(!CL.cfg) return;
   const getUser=async()=>{ const r=await rawFetch(baseUrl()+'/auth/v1/user',{headers:{apikey:CL.cfg.key,Authorization:'Bearer '+tok.access_token}}); if(!r.ok) throw new Error('Link inválido ou expirado. Peça um novo.'); return r.json(); };
   if(type!=='recovery'){ // confirmação de cadastro: já entra
-    getUser().then(u=>{ setSess({...tok,user:u}); renderCloudChip(); toast('E-mail confirmado. Conectada à nuvem'); cloudSyncSoon(300); }).catch(e=>alert(e.message)); return; }
+    getUser().then(u=>{ setSess({...tok,user:u}); toast('E-mail confirmado. Conectada à nuvem'); if(ENTERED||GATE) enterApp(true); else renderCloudChip(); }).catch(e=>alert(e.message)); return; }
   const ov=document.createElement('div');
   ov.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(40,28,24,.55);display:flex;align-items:center;justify-content:center;padding:18px';
   ov.innerHTML=`<div style="background:#fff;border-radius:20px;max-width:380px;width:100%;padding:24px 22px;box-shadow:0 20px 60px rgba(0,0,0,.3);font-family:inherit">
@@ -2661,14 +2679,14 @@ function handleAuthLink(){
     msg('Salvando…');
     try{ const r=await rawFetch(baseUrl()+'/auth/v1/user',{method:'PUT',headers:{apikey:CL.cfg.key,Authorization:'Bearer '+tok.access_token,'Content-Type':'application/json'},body:JSON.stringify({password:a})});
       const j=await r.json().catch(()=>({})); if(!r.ok) throw new Error(traduzErro(j.msg||j.error_description||j.message||j.error||('erro '+r.status)));
-      const u=j.id?j:await getUser(); setSess({...tok,user:u}); ov.remove(); renderCloudChip(); toast('Senha alterada. Conectada à nuvem'); cloudSyncSoon(300);
+      const u=j.id?j:await getUser(); setSess({...tok,user:u}); ov.remove(); toast('Senha alterada. Conectada à nuvem'); if(ENTERED||GATE) enterApp(true); else renderCloudChip();
     }catch(e){ msg(e.message); } };
 }
 async function ensureToken(){
   if(!CL.sess) throw new Error('Entre na sua conta da nuvem');
   if(Date.now()/1000 < CL.sess.expires_at-90) return;
   try{ const j=await authReq('token?grant_type=refresh_token',{refresh_token:CL.sess.refresh_token}); setSess(j); }
-  catch(e){ if(e instanceof Offline) throw e; sessSave(null); renderCloudChip(); throw new Error('Sessão expirada: entre novamente na nuvem'); }
+  catch(e){ if(e instanceof Offline) throw e; sessSave(null); renderCloudChip(); if(ENTERED) setTimeout(showGate,50); throw new Error('Sessão expirada: entre novamente'); }
 }
 async function api(path,opt={}){
   await ensureToken();
@@ -2684,8 +2702,9 @@ const stDownload=async path=>(await api(`/storage/v1/object/authenticated/${BUCK
 const stRemove=paths=>paths.length?api(`/storage/v1/object/${BUCKET}`,{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({prefixes:paths})}):null;
 
 // ---------- exclusões pendentes (quando offline)
-const tombs=()=>lsGet('fc_tomb',{patients:[],evals:[],files:[]});
-function addTomb(kind,id,files){ const t=tombs(); if(id&&!t[kind].includes(id)) t[kind].push(id); (files||[]).forEach(f=>{ if(f&&!t.files.includes(f)) t.files.push(f); }); lsSet('fc_tomb',t); }
+let TOMB=lsGet('fc_tomb',null)||{patients:[],evals:[],files:[]};
+const tombs=()=>TOMB;
+function addTomb(kind,id,files){ const t=TOMB; if(id&&!t[kind].includes(id)) t[kind].push(id); (files||[]).forEach(f=>{ if(f&&!t.files.includes(f)) t.files.push(f); }); }
 const evFiles=ev=>{ const f=[]; for(const v in (ev.views||{})){ const d=ev.views[v]; if(d.remote) f.push(d.remote); if(d.tremote) f.push(d.tremote); } return f; };
 
 // ---------- envio
@@ -2715,9 +2734,9 @@ async function cloudSync(opts={}){
   try{
     // 1) exclusões pendentes
     const t=tombs();
-    for(const id of [...t.evals]){ await restDelete('evals',id); t.evals=t.evals.filter(x=>x!==id); lsSet('fc_tomb',t); }
-    for(const id of [...t.patients]){ await restDelete('patients',id); t.patients=t.patients.filter(x=>x!==id); lsSet('fc_tomb',t); }
-    if(t.files.length){ await stRemove(t.files); t.files=[]; lsSet('fc_tomb',t); }
+    for(const id of [...t.evals]){ await restDelete('evals',id); t.evals=t.evals.filter(x=>x!==id);  }
+    for(const id of [...t.patients]){ await restDelete('patients',id); t.patients=t.patients.filter(x=>x!==id);  }
+    if(t.files.length){ await stRemove(t.files); t.files=[];  }
     // 2) envia o que mudou neste aparelho
     const lp=await dbAll('patients'), le=await dbAll('evals');
     const pushAll=!!opts.pushAll;
@@ -2749,12 +2768,14 @@ async function cloudSync(opts={}){
       if(!thumb && r.thumb_path){ try{ thumb=await stDownload(r.thumb_path); }catch(e){ if(e instanceof Offline) throw e; } }
       await dbPut('patients',{id:r.id,name:r.name,nameKey:r.name_key,birth:r.birth||'',sex:r.sex||'F',thumbPath:r.thumb_path,thumb,lastEval:r.last_eval,createdAt:r.created_at,updatedAt:r.updated_at,dirty:false,synced:true});
     }
-    CL.last=new Date().toISOString(); lsSet('fc_last',CL.last);
+    CL.last=new Date().toISOString();
     return true;
-  }catch(e){ console.warn(e); CL.err=e instanceof Offline?'Sem internet: alterações ficam guardadas e serão enviadas depois':e.message; return false; }
+  }catch(e){ console.warn(e); CL.err=e instanceof Offline?'Sem internet: não foi possível falar com a nuvem':e.message; return false; }
   finally{ CL.busy=false; renderCloudChip(); refreshCount();
     if(CL.queued){ CL.queued=false; setTimeout(()=>cloudSync(),300); } }
 }
+async function syncNow(){ for(let i=0;i<300&&CL.busy;i++) await new Promise(r=>setTimeout(r,200)); return cloudSync(); }
+window.addEventListener('beforeunload',e=>{ if(memDirty()){ e.preventDefault(); e.returnValue=''; } });
 let syncT=null; function cloudSyncSoon(ms){ if(!cloudOn()) return; clearTimeout(syncT); syncT=setTimeout(()=>cloudSync().then(ok=>{ if(ok && !$('patientsScreen').classList.contains('hidden') && !$('ptListView').classList.contains('hidden')) loadPatients(true); }),ms||400); }
 window.addEventListener('online',()=>cloudSyncSoon(800));
 async function ensureImages(ev){ // baixa fotos que ainda não estão neste aparelho
@@ -2798,25 +2819,21 @@ function renderCloudScreen(){
       <div id="clMsg" class="status"></div></div>
       <div class="card section"><small style="color:var(--muted)">Projeto: ${esc(baseUrl())}</small><div class="btns" style="margin-top:8px"><button class="btn small" id="cfReset">Trocar projeto</button></div></div>`+sqlCard();
     const em=()=>$('clEmail').value.trim(), pw=()=>$('clPw').value, msg=t=>$('clMsg').textContent=t;
-    $('clIn').onclick=async()=>{ if(!em()||!pw()) return msg('Preencha e-mail e senha.'); msg('Entrando…'); try{ await cloudLogin(em(),pw()); toast('Conectada à nuvem'); renderCloudChip(); renderCloudScreen(); cloudSyncSoon(100); }catch(e){ msg(e.message); } };
-    $('clUp').onclick=async()=>{ if(!em()||pw().length<6) return msg('Informe o e-mail e uma senha com 6+ caracteres.'); msg('Criando conta…'); try{ const logged=await cloudSignup(em(),pw()); if(logged){ toast('Conta criada'); renderCloudChip(); renderCloudScreen(); cloudSyncSoon(100); } else msg('Conta criada! Abra o e-mail de confirmação enviado para '+em()+' e depois toque em Entrar.'); }catch(e){ msg(e.message); } };
+    $('clIn').onclick=async()=>{ if(!em()||!pw()) return msg('Preencha e-mail e senha.'); msg('Entrando…'); try{ await cloudLogin(em(),pw()); toast('Conectada à nuvem'); renderCloudScreen(); enterApp(true); }catch(e){ msg(e.message); } };
+    $('clUp').onclick=async()=>{ if(!em()||pw().length<6) return msg('Informe o e-mail e uma senha com 6+ caracteres.'); msg('Criando conta…'); try{ const logged=await cloudSignup(em(),pw()); if(logged){ toast('Conta criada'); renderCloudScreen(); enterApp(true); } else msg('Conta criada! Abra o e-mail de confirmação enviado para '+em()+' e depois toque em Entrar.'); }catch(e){ msg(e.message); } };
     $('clRec').onclick=async()=>{ if(!em()) return msg('Digite o e-mail acima.'); try{ await cloudRecover(em()); msg('Se o e-mail tiver conta, chegará um link para criar nova senha.'); }catch(e){ msg(e.message); } };
     $('cfReset').onclick=()=>{ lsSet('fc_cloud',null); cloudLoad(); if(CL.cfg){ toast('Este app já vem com o projeto da clínica configurado'); } renderCloudChip(); renderCloudScreen(); };
     hookSql(); return;
   }
   B.innerHTML=`<div class="card"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap"><div><h3>Conectada</h3><small style="color:var(--muted)">${esc(CL.sess.user.email)}</small></div><div class="cloudchip"></div></div>
-      <p style="color:var(--muted);margin:12px 0">Os pacientes são salvos neste aparelho e enviados para a nuvem automaticamente. Em outro celular ou computador, entre com a mesma conta para ver tudo.</p>
-      <div class="btns"><button class="btn primary" id="clSync">Sincronizar agora</button><button class="btn" id="clPushAll">Enviar todos os pacientes deste aparelho</button></div>
+      <p style="color:var(--muted);margin:12px 0">Os pacientes ficam guardados somente na nuvem desta conta. Nada fica gravado no aparelho: em qualquer celular ou computador, entre com a mesma conta para ver tudo.</p>
+      <div class="btns"><button class="btn primary" id="clSync">Sincronizar agora</button></div>
       <div id="clMsg" class="status"></div></div>
-    <div class="card section"><h3>Conta</h3><div class="btns" style="margin-top:8px"><button class="btn" id="clOut">Sair desta conta</button><button class="btn" id="clOutWipe" style="color:var(--bad)">Sair e apagar os dados deste aparelho</button></div>
-      <small style="color:var(--muted);display:block;margin-top:8px">Apagar deste aparelho não apaga da nuvem. Use em aparelhos emprestados ou compartilhados.</small></div>`;
+    <div class="card section"><h3>Conta</h3><div class="btns" style="margin-top:8px"><button class="btn" id="clOut">Sair desta conta</button></div>
+      <small style="color:var(--muted);display:block;margin-top:8px">Ao sair, os pacientes somem da tela deste aparelho e continuam guardados na nuvem.</small></div>`;
   renderCloudChip();
   $('clSync').onclick=async()=>{ $('clMsg').textContent='Sincronizando…'; const ok=await cloudSync(); $('clMsg').textContent=ok?'Tudo sincronizado.':(CL.err||''); };
-  $('clPushAll').onclick=async()=>{ $('clMsg').textContent='Enviando…'; const ok=await cloudSync({pushAll:true}); $('clMsg').textContent=ok?'Todos os pacientes deste aparelho estão na nuvem.':(CL.err||''); };
-  $('clOut').onclick=async()=>{ if(!await ask('Sair da nuvem?','Os pacientes continuam neste aparelho. Alterações feitas sem login não são enviadas até você entrar de novo.','Sair')) return; sessSave(null); renderCloudChip(); renderCloudScreen(); };
-  $('clOutWipe').onclick=async()=>{ if(!await ask('Sair e apagar deste aparelho?','Os pacientes ficam guardados na nuvem, mas somem deste aparelho. Itens ainda não enviados serão perdidos.','Sair e apagar',true)) return;
-    try{ await cloudSync(); }catch(e){} for(const e of await dbAll('evals')) await dbDel('evals',e.id); for(const p of await dbAll('patients')) await dbDel('patients',p.id); lsSet('fc_tomb',null);
-    sessSave(null); resetPatient(); refreshCount(); renderCloudChip(); renderCloudScreen(); toast('Dados removidos deste aparelho'); };
+  $('clOut').onclick=async()=>{ if(!await ask('Sair da conta?',memDirty()?'<b>Há alterações que ainda não subiram para a nuvem e serão perdidas.</b>':'Os pacientes continuam guardados na nuvem.','Sair',memDirty())) return; logoutAll(); };
 }
 function sqlCard(){ return `<details class="anam section"><summary><span>Primeira configuração do Supabase (uma vez só)</span></summary><div class="body">
   <ol style="margin:0;padding-left:18px;display:grid;gap:6px;font-size:.92rem">
@@ -2848,6 +2865,44 @@ renderCloudChip();
   if(iOS && location.protocol==='https:'){ $('installTxt').innerHTML='Para instalar no iPhone: toque em <b>Compartilhar</b> (□↑) e depois em <b>Adicionar à Tela de Início</b>.'; $('btnInstall').classList.add('hidden'); $('installBar').classList.remove('hidden'); }
   window.addEventListener('appinstalled',()=>{ $('installBar').classList.add('hidden'); toast('App instalado'); });
 })();
+// ---------- tela de login obrigatória (logo após o carregamento) ----------
+let GATE=null, ENTERED=false, LEGACY_DONE=false;
+function showGate(){
+  if(GATE) return; if(!CL.cfg) cloudLoad();
+  const g=document.createElement('div'); GATE=g; g.id='authGate';
+  g.style.cssText='position:fixed;inset:0;z-index:9000;background:radial-gradient(120% 90% at 50% 20%,#FFFDFB 0%,#F8F3EE 55%,#F1E8DF 100%);display:flex;align-items:center;justify-content:center;padding:20px;overflow:auto';
+  g.innerHTML=`<form id="gtForm" autocomplete="on" style="width:100%;max-width:380px;background:#fff;border-radius:22px;padding:26px 22px;box-shadow:0 20px 60px rgba(80,50,40,.15);text-align:left">
+    <div style="text-align:center;margin-bottom:14px"><img src="logo-mark.png" alt="" style="width:64px;height:64px;object-fit:contain"><div class="spl-name" style="margin-top:6px;font-size:.62em;transform:scale(.62);transform-origin:center top;height:72px"><span class="wm"><span class="wm-name">FaceScan</span><span class="wm-by">by Angevie</span></span></div>
+    <p style="margin:8px 0 0;color:#6B564E;font-size:.9rem">Entre com a conta da clínica para acessar os pacientes.</p></div>
+    <label for="gtEmail">E-mail</label><input type="email" id="gtEmail" name="email" inputmode="email" autocomplete="username" placeholder="email@clinica.com" required style="width:100%;box-sizing:border-box;padding:12px 14px;border:1px solid #E8DDD2;border-radius:12px;font:inherit;font-size:1rem;background:#FFFDFB;margin-top:4px">
+    <label for="gtPw" style="margin-top:10px">Senha</label><input type="password" id="gtPw" name="password" autocomplete="current-password" placeholder="Sua senha" required style="width:100%;box-sizing:border-box;padding:12px 14px;border:1px solid #E8DDD2;border-radius:12px;font:inherit;font-size:1rem;background:#FFFDFB;margin-top:4px">
+    <p id="gtMsg" style="min-height:1.2em;color:#B7715F;font-size:.86rem;margin:10px 0 6px"></p>
+    <button class="btn primary" id="gtIn" type="submit" style="width:100%;justify-content:center">Entrar</button>
+    <div style="display:flex;justify-content:space-between;gap:8px;margin-top:12px"><button class="btn small" type="button" id="gtRec">Esqueci a senha</button><button class="btn small" type="button" id="gtUp">Criar conta</button></div>
+    <small style="display:block;margin-top:14px;color:#9A867D;text-align:center">Os dados dos pacientes ficam somente na nuvem desta conta. Nada é gravado no aparelho.</small></form>`;
+  document.body.appendChild(g);
+  const em=()=>g.querySelector('#gtEmail').value.trim(), pw=()=>g.querySelector('#gtPw').value, msg=t=>g.querySelector('#gtMsg').textContent=t;
+  if(CL.sess&&CL.sess.user) g.querySelector('#gtEmail').value=CL.sess.user.email||'';
+  g.querySelector('#gtForm').onsubmit=async ev=>{ ev.preventDefault(); if(!CL.cfg) return msg('Nuvem não configurada neste app.'); if(!em()||!pw()) return msg('Preencha e-mail e senha.');
+    msg('Entrando…'); g.querySelector('#gtIn').disabled=true;
+    try{ await cloudLogin(em(),pw()); await enterApp(true); }catch(e){ msg(e instanceof Offline?'Sem internet. Conecte-se para entrar.':e.message); } finally{ const b=g.querySelector('#gtIn'); if(b) b.disabled=false; } };
+  g.querySelector('#gtRec').onclick=async()=>{ if(!em()) return msg('Digite seu e-mail acima e toque de novo em "Esqueci a senha".'); msg('Enviando…');
+    try{ await cloudRecover(em()); msg('Se o e-mail tiver conta, chegará um link para criar nova senha. Abra o e-mail neste aparelho.'); }catch(e){ msg(e.message); } };
+  g.querySelector('#gtUp').onclick=async()=>{ if(!em()||pw().length<6) return msg('Digite o e-mail e uma senha com 6+ caracteres e toque em "Criar conta".'); msg('Criando conta…');
+    try{ const logged=await cloudSignup(em(),pw()); if(logged) await enterApp(true); else msg('Conta criada! Abra o e-mail de confirmação enviado para '+em()+'.'); }catch(e){ msg(e.message); } };
+  setTimeout(()=>{ const i=g.querySelector(em()?'#gtPw':'#gtEmail'); if(i) i.focus(); },300);
+}
+function closeGate(){ if(GATE){ GATE.remove(); GATE=null; } }
+async function enterApp(fresh){
+  closeGate(); if(!ENTERED){ ENTERED=true; show('home'); }
+  renderCloudChip(); if(!$('cloudScreen').classList.contains('hidden')) renderCloudScreen();
+  let n=0; if(!LEGACY_DONE){ LEGACY_DONE=true; try{ n=await legacyLoad(); }catch(e){} }
+  const ok=await syncNow();
+  if(ok){ if(!memDirty()) legacyWipe(); if(n) toast(`${n} registro(s) que estavam só neste aparelho foram enviados para a nuvem`); }
+  else toast('Nuvem: '+(CL.err||'falha ao sincronizar'));
+  refreshCount(); if(!$('patientsScreen').classList.contains('hidden')) loadPatients(true);
+}
+function logoutAll(){ sessSave(null); memClear(); TOMB={patients:[],evals:[],files:[]}; CL.last=null; CL.err=null; resetPatient(); refreshCount(); renderCloudChip(); show('home'); showGate(); toast('Você saiu da conta'); }
 try{ handleAuthLink(); }catch(e){ console.warn(e); }
 window.__hof={S,analyzeAll,autoDetect,extractSilhouette,render};
 </script>
